@@ -523,7 +523,6 @@ function ApplyThrottle(canDrive : boolean, relativeVelocity : Vector3)
 		}
 		else
 			brakeForce = Mathf.Sign(throttle) * engineForceValues[0] * rigidbody.mass;
-		
 		rigidbody.AddForce(transform.forward * Time.deltaTime * (throttleForce + brakeForce));
 	}
 }
