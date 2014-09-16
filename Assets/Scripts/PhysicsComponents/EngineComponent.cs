@@ -8,6 +8,7 @@ public class EngineComponent : MonoBehaviour
     private float steer;
     private float motor;
     private float brake;
+    private static double engineSpeed;
     private GearsComponent gearComponent;
 
     public void EngineUpdate ( )
@@ -17,6 +18,10 @@ public class EngineComponent : MonoBehaviour
 
     public void EngineFixedUpdate ( Vector3 vehicleVelocity, GearsComponent gears )
     {
+        if ( WheelComponent.wheelsGrounded == WheelsOnGround.REAR_WHEELS_IN_AIR )
+        {
+            return;
+        }
         HorsePower( vehicleVelocity, gears );
         ApplyThrottle( vehicleVelocity, gears );
         ApplySteering( vehicleVelocity );
@@ -27,6 +32,11 @@ public class EngineComponent : MonoBehaviour
         steer = Input.GetAxis( "Horizontal" );
         vehicleThrottle = Input.GetAxis( "Acceleration" ) * 30;
         brake = Input.GetAxis( "Brake" );
+    }
+
+    public static double GetEngineSpeed ( )
+    {
+        return engineSpeed;
     }
 
     private void HorsePower ( Vector3 velocity, GearsComponent gears )
@@ -69,6 +79,7 @@ public class EngineComponent : MonoBehaviour
             brakeForce = -brake * ( gears.GetGearValue( 0 ) * rigidbody.mass );
         }
         rigidbody.AddForce( transform.forward * Time.deltaTime * ( throttleForce + brakeForce ) );
+        engineSpeed = rigidbody.velocity.magnitude;
     }
 
     private void ApplySteering ( Vector3 velocity )

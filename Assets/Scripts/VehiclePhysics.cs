@@ -19,9 +19,9 @@ public class VehiclePhysics : MonoBehaviour
     private void Start ( )
     {
         WheelCollider[ ] vehicleWheels = new WheelCollider[ ]{ frontRightWheel, 
-                                                   frontLeftWheel, 
-                                                   rearRightWheel, 
-                                                   rearLeftWheel };
+                                                               frontLeftWheel, 
+                                                               rearRightWheel, 
+                                                               rearLeftWheel };
         gearsComponent = new GearsComponent( 6, 180 );
         engineComponent = GetComponent<EngineComponent>( );
         wheelComponent = new WheelComponent( vehicleWheels, rigidbody );
@@ -39,6 +39,10 @@ public class VehiclePhysics : MonoBehaviour
         Vector3 vehicleVelocity = transform.InverseTransformDirection( rigidbody.velocity );
         engineComponent.EngineFixedUpdate( vehicleVelocity, gearsComponent );
         wheelComponent.WheelFixedUpdate( vehicleVelocity );
+        //if ( WheelComponent.wheelsGrounded == WheelsOnGround.REAR_WHEELS_IN_AIR )
+        //{
+        //    return;
+        //}
         UpdateVehicleDrag( vehicleVelocity );
     }
 

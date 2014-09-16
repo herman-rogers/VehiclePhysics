@@ -5,15 +5,15 @@ public class ControllerInput : MonoBehaviour
 {
 	void Update( )
 	{
-		if (Input.GetKeyDown( KeyCode.Space ) || Input.GetKeyDown( "joystick button 2" ) )
+		if (Input.GetKeyDown( KeyCode.Space ) )// || Input.GetKeyDown( "joystick button 2" ) )
 		{
 			Subject.Notify( SceneStepper.PAUSE_GAME );
 		}
-		if( Input.GetKey( KeyCode.M ) || Input.GetKey( "joystick button 1" ) )
+		if( Input.GetKey( KeyCode.M ) )// || Input.GetKey( "joystick button 1" ) )
 		{
 			Subject.Notify( SceneStepper.STEP_THROUGH );
 		}
-		if( Input.GetKeyDown( KeyCode.H ) || Input.GetKeyDown( "joystick button 0" ) )
+		if( Input.GetKeyDown( KeyCode.H ) )//|| Input.GetKeyDown( "joystick button 0" ) )
 		{
 			Subject.Notify( SceneDebugger.SHOW_GUI );
 		}

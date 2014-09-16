@@ -75,7 +75,8 @@ public class SceneDebugger : UnityObserver
 		GUI.Label( new Rect( 10, 20, 200, 100 ), SceneFPS.GetFramesPerSecond( ) );
 		GUI.Label( new Rect( 10, 40, 200, 100 ), "Obs: " + Subject.ObserverCount( ) );
 		GUI.Label( new Rect( 10, 60, 200, 100 ), "UnityObs: " + Subject.UnityObserverCount( ) );
-		GUI.Label( new Rect( 10, 80, 200, 100 ), "Reverser Target: " + currentReverserTarget );
+        GUI.Label( new Rect( 10, 80, 200, 100 ), "Speed: " + EngineComponent.GetEngineSpeed( ) );
+		GUI.Label( new Rect( 10, 100, 200, 100 ), "Reverser Target: " + currentReverserTarget );
 		if ( GUI.Button( new Rect( 10, 140, 200, 20 ), "Clear Tracked" ) )
 		{
 			transformTracker.ResetTrackedObjects( );

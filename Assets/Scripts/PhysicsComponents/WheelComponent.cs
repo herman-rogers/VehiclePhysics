@@ -1,8 +1,15 @@
 ﻿using UnityEngine;
 using System.Collections;
 
+public enum WheelsOnGround
+{
+    REAR_WHEELS_GROUNDED,
+    REAR_WHEELS_IN_AIR,
+}
+
 public class WheelComponent
 {
+    public static WheelsOnGround wheelsGrounded;
     private WheelFrictionCurve wheelFriction;
     private WheelCollider[ ] vehicleWheels;
     private WheelCollider frontRightWheel;
@@ -37,6 +44,8 @@ public class WheelComponent
     {
         WheelFriction( velocity );
         FrontStabilizerBar( );
+        RearStabilizerBar( );
+        RearWheelsGrounded( );
     }
 
     private void WheelFrictionCurve ( )
@@ -108,6 +117,42 @@ public class WheelComponent
 
     private void RearStabilizerBar ( )
     {
+        WheelHit wheelHit;
+        float travelLeft = 1.0f;
+        float traveltRight = 1.0f;
+        if ( rearLeftWheel.GetGroundHit( out wheelHit ) )
+        {
+            travelLeft = ( ( -rearLeftWheel.transform.InverseTransformPoint( wheelHit.point ).y
+                             - rearLeftWheel.radius ) / rearLeftWheel.suspensionDistance );
+        }
+        if ( rearRightWheel.GetGroundHit( out wheelHit ) )
+        {
+            traveltRight = ( ( -rearRightWheel.transform.InverseTransformPoint( wheelHit.point ).y
+                               - rearRightWheel.radius ) / rearRightWheel.suspensionDistance );
+        }
+        float antiRollForce = ( travelLeft - traveltRight ) * stabilizierForce;
+        if ( rearLeftWheel.GetGroundHit( out wheelHit ) )
+        {
+            vehicleRigidBody.AddForceAtPosition( rearLeftWheel.transform.up * -antiRollForce,
+                                         rearLeftWheel.transform.position );
+        }
+        if ( rearRightWheel.GetGroundHit( out wheelHit ) )
+        {
+            vehicleRigidBody.AddForceAtPosition( rearRightWheel.transform.up * antiRollForce,
+                                                 rearRightWheel.transform.position );
+        }
 
+    }
+
+    private void RearWheelsGrounded ( )
+    { 
+        WheelHit wheelHit;
+        if( rearRightWheel.GetGroundHit( out wheelHit ) 
+            && rearLeftWheel.GetGroundHit( out wheelHit ) )
+        {
+            wheelsGrounded = WheelsOnGround.REAR_WHEELS_GROUNDED;
+            return;
+        }
+        wheelsGrounded = WheelsOnGround.REAR_WHEELS_IN_AIR;
     }
 }
