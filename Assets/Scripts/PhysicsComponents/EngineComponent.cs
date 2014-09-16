@@ -18,43 +18,45 @@ public class EngineComponent : MonoBehaviour
     public void EngineFixedUpdate ( Vector3 vehicleVelocity, GearsComponent gears )
     {
         HorsePower( vehicleVelocity, gears );
+        ApplyThrottle( vehicleVelocity, gears );
+        ApplySteering( vehicleVelocity );
     }
 
     private void UpdateInput ( )
     {
-        steer = Mathf.Clamp( Input.GetAxis( "Horizontal" ), -1, 1 );
-        motor = Mathf.Clamp( Input.GetAxis( "Acceleration" ), 0, 1 );
-        brake = -1 * Mathf.Clamp( Input.GetAxis( "Brake" ), -1, 0 );
+        steer = Input.GetAxis( "Horizontal" );
+        vehicleThrottle = Input.GetAxis( "Acceleration" ) * 30;
+        brake = Input.GetAxis( "Brake" );
     }
 
     private void HorsePower ( Vector3 velocity, GearsComponent gears )
     {
-        float vehicleGear = gearComponent.currentGear;
+        float vehicleGear = gears.currentGear;
         if ( vehicleThrottle == 0 )
         {
-            horsePower -= Time.deltaTime * 200;
+            horsePower -= Time.deltaTime * 50;
         }
         else if ( SameSign( velocity.z, vehicleThrottle ) )
         {
-            horsePower += Time.deltaTime * 200 * gearComponent.GetNormalizedPower( horsePower );
+            horsePower += Time.deltaTime * 50 * gears.GetNormalizedPower( horsePower );
         }
         else
         {
-            horsePower += Time.deltaTime * 300;
+            horsePower += Time.deltaTime * 50;
         }
         if ( vehicleGear == 0 )
         {
-            horsePower = Mathf.Clamp( horsePower, 0, gearComponent.GetGearValue( 0 ) );
+            horsePower = Mathf.Clamp( horsePower, 0, gears.GetGearValue( 0 ) );
         }
         else
         {
             horsePower = Mathf.Clamp( horsePower,
-                                      gearComponent.GetGearValue( vehicleGear - 1 ),
-                                      gearComponent.GetGearValue( vehicleGear ) );
+                                      gears.GetGearValue( vehicleGear - 1 ),
+                                      gears.GetGearValue( vehicleGear ) );
         }
     }
 
-    private void ApplyThrottle ( Vector3 velocity )
+    private void ApplyThrottle ( Vector3 velocity, GearsComponent gears )
     {
         float throttleForce = 0.0f;
         float brakeForce = 0.0f;
@@ -64,7 +66,7 @@ public class EngineComponent : MonoBehaviour
         }
         if ( brake > 0.0f )
         {
-            brakeForce = -brake * ( gearComponent.GetGearValue( 0 ) * rigidbody.mass );
+            brakeForce = -brake * ( gears.GetGearValue( 0 ) * rigidbody.mass );
         }
         rigidbody.AddForce( transform.forward * Time.deltaTime * ( throttleForce + brakeForce ) );
     }
@@ -83,7 +85,7 @@ public class EngineComponent : MonoBehaviour
     private float SpeedTurnRatio ( )
     {
         float speed = rigidbody.velocity.magnitude;
-        if ( speed > VehiclePhysics.speedCap )
+        if ( speed > VehiclePhysics.speedCap /2 )
         {
             return 10;
         }
