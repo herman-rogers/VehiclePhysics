@@ -7,44 +7,114 @@ public enum WheelsOnGround
     REAR_WHEELS_IN_AIR,
 }
 
+public enum WheelPosition
+{
+    FRONT_WHEEL,
+    REAR_WHEEL,
+    LEFT_WHEEL,
+    RIGHT_WHEEL,
+}
+
+public struct VehicleWheel
+{ 
+    public Transform visualWheel;
+    public WheelCollider mainWheelCollider;
+    public float wheelRadius;
+    public WheelPosition wheelFrontRear;
+    public WheelPosition wheelLeftRight;
+
+    public VehicleWheel( WheelCollider vehicleWheel,
+                         WheelPosition frontRear,
+                         WheelPosition leftRight )
+    {
+        wheelFrontRear = frontRear;
+        wheelLeftRight = leftRight;
+        mainWheelCollider = vehicleWheel;
+        visualWheel = vehicleWheel.GetComponentInChildren<MeshRenderer>( ).transform;
+        wheelRadius = ( visualWheel.renderer.bounds.size.y / 2 );
+        mainWheelCollider.radius = wheelRadius;
+    }
+
+    public void MatchVisualWheelToSuspension( )
+    {
+        visualWheel.position = mainWheelCollider.transform.position;
+    }
+}
+
 public class WheelComponent
 {
     public static WheelsOnGround wheelsGrounded;
+    private VehicleWheel[ ] vehicleWheels; 
     private WheelFrictionCurve wheelFriction;
-    private WheelCollider[ ] vehicleWheels;
-    private WheelCollider frontRightWheel;
-    private WheelCollider frontLeftWheel;
-    private WheelCollider rearRightWheel;
-    private WheelCollider rearLeftWheel;
-    private Rigidbody vehicleRigidBody;
+    private WheelCollider[ ] vehicleColliders;
+    private VehiclePhysics mainVehiclePhysics;
     private float stabilizierForce = 5000.0f;
-
-    //Suspension
     private float suspensionRange = 0.1f;
     private float suspensionDamper = 50.0f;
-    private float suspensionSpringFront = 18500;
+    private float suspensionSpringFront = 18500.0f;
     private float suspensionSpringRear = 9000.0f;
 
-    public WheelComponent ( WheelCollider[ ] wheels, Rigidbody rigidBody )
+    public WheelComponent ( GameObject vehiclePhysics )
     {
-        vehicleWheels = wheels;
-        frontRightWheel = wheels[ 0 ];
-        frontLeftWheel = wheels[ 1 ];
-        rearRightWheel = wheels[ 2 ];
-        rearLeftWheel = wheels[ 3 ];
-        vehicleRigidBody = rigidBody;
-        WheelSuspension( frontRightWheel, true );
-        WheelSuspension( frontLeftWheel, true );
-        WheelSuspension( rearRightWheel, false );
-        WheelSuspension( rearLeftWheel, false );
+        mainVehiclePhysics = vehiclePhysics.GetComponent<VehiclePhysics>( );
+        vehicleColliders = mainVehiclePhysics.vehicleWheels;
+        SetupWheelObjects( );
+        WheelSuspension( );
         WheelFrictionCurve( );
+    }
+
+    private void SetupWheelObjects ( )
+    {
+        VehicleWheel frontRightWheel = new VehicleWheel( vehicleColliders[0],
+                                                        WheelPosition.FRONT_WHEEL,
+                                                        WheelPosition.RIGHT_WHEEL );
+        VehicleWheel frontLeftWheel = new VehicleWheel( vehicleColliders[ 1 ],
+                                                        WheelPosition.FRONT_WHEEL,
+                                                        WheelPosition.LEFT_WHEEL );
+        VehicleWheel rearRightWheel = new VehicleWheel( vehicleColliders[ 2 ],
+                                                        WheelPosition.REAR_WHEEL,
+                                                        WheelPosition.RIGHT_WHEEL);
+        VehicleWheel rearLeftWheel = new VehicleWheel( vehicleColliders[ 3 ],
+                                                       WheelPosition.REAR_WHEEL,
+                                                       WheelPosition.LEFT_WHEEL);
+        vehicleWheels = new VehicleWheel[ ] { frontRightWheel, frontLeftWheel, rearRightWheel, rearLeftWheel };
+    }
+
+    public void WheelUpdate ( Vector3 velocity )
+    {
+        UpdateWheelGraphics( velocity );
+    }
+
+    private void UpdateWheelGraphics ( Vector3 velocity )
+    {
+        foreach ( VehicleWheel currentWheel in vehicleWheels )
+        {
+            WheelHit wheelHit = new WheelHit( );
+            if ( currentWheel.mainWheelCollider.GetGroundHit( out wheelHit ) )
+            {
+                currentWheel.visualWheel.localPosition = currentWheel.mainWheelCollider.transform.up
+                    * ( currentWheel.wheelRadius
+                    + currentWheel.mainWheelCollider.transform.InverseTransformPoint( wheelHit.point ).y );
+                Vector3 wheelVelocity = mainVehiclePhysics.rigidbody.GetPointVelocity( wheelHit.point );
+                Vector3 groundSpeed = currentWheel.visualWheel.InverseTransformDirection( wheelVelocity );
+                currentWheel.MatchVisualWheelToSuspension( );
+                if ( currentWheel.wheelFrontRear == WheelPosition.FRONT_WHEEL )
+                {
+                    Vector3 cachedWheelRotation = currentWheel.visualWheel.localEulerAngles;
+                    cachedWheelRotation.y = mainVehiclePhysics.engineComponent.SteeringSpeed( );
+                    currentWheel.visualWheel.localEulerAngles = cachedWheelRotation;
+                }
+                currentWheel.visualWheel.parent.Rotate( Vector3.right * ( groundSpeed.z / currentWheel.wheelRadius )
+                                                 * Time.deltaTime * Mathf.Rad2Deg );
+                Debug.Log( ( groundSpeed.z / currentWheel.wheelRadius ) );
+            }
+        }
     }
 
     public void WheelFixedUpdate ( Vector3 velocity )
     {
         WheelFriction( velocity );
-        FrontStabilizerBar( );
-        RearStabilizerBar( );
+        WheelStabilizerBars( );
         RearWheelsGrounded( );
     }
 
@@ -58,20 +128,24 @@ public class WheelComponent
         wheelFriction.stiffness = 1;
     }
 
-    private void WheelSuspension( WheelCollider currentWheel, bool isFrontWheel )
+    private void WheelSuspension ( )
     {
-        currentWheel.suspensionDistance = suspensionRange;
-        JointSpring wheelJointSpring = currentWheel.suspensionSpring;
-        if( isFrontWheel )
+        foreach ( VehicleWheel wheel in vehicleWheels )
         {
-            wheelJointSpring.spring = suspensionSpringFront;
+            WheelCollider currentWheelCollider = wheel.mainWheelCollider;
+            currentWheelCollider.suspensionDistance = suspensionRange;
+            JointSpring wheelJointSpring = currentWheelCollider.suspensionSpring;
+            if ( wheel.wheelFrontRear == WheelPosition.FRONT_WHEEL )
+            {
+                wheelJointSpring.spring = suspensionSpringFront;
+            }
+            else
+            {
+                wheelJointSpring.spring = suspensionSpringRear;
+            }
+            wheelJointSpring.damper = suspensionDamper;
+            currentWheelCollider.suspensionSpring = wheelJointSpring;
         }
-        else
-        {
-            wheelJointSpring.spring = suspensionSpringRear;
-        }
-        wheelJointSpring.damper = suspensionDamper;
-        currentWheel.suspensionSpring = wheelJointSpring;
     }
 
     private void WheelFriction ( Vector3 velocity )
@@ -79,80 +153,71 @@ public class WheelComponent
         float squareVelocity = velocity.x * velocity.x;
         wheelFriction.extremumValue = Mathf.Clamp( 300 - squareVelocity, 0, 300 );
         wheelFriction.asymptoteValue = Mathf.Clamp( 150 - ( squareVelocity / 2 ), 0, 150 );
-        foreach ( WheelCollider wheel in vehicleWheels )
+        foreach ( WheelCollider wheel in vehicleColliders )
         {
             wheel.sidewaysFriction = wheelFriction;
             wheel.forwardFriction = wheelFriction;
         }
     }
 
-    private void FrontStabilizerBar ( )
+    private void WheelStabilizerBars ( )
     {
         WheelHit wheelHit;
-        float travelLeft = 1.0f;
-        float traveltRight = 1.0f;
-        if ( frontLeftWheel.GetGroundHit( out wheelHit ) )
+        float[] stabilizerDistances = new float[4];
+        for ( int i = 0; i < vehicleWheels.Length; i++)
         {
-            travelLeft = ( ( -frontLeftWheel.transform.InverseTransformPoint( wheelHit.point ).y
-                             - frontLeftWheel.radius ) / frontLeftWheel.suspensionDistance );
+            float travelDistance = 1.0f;
+            WheelCollider currentWheelCollider = vehicleWheels[ i ].mainWheelCollider;
+            if ( currentWheelCollider.GetGroundHit( out wheelHit ) )
+            {
+                if ( vehicleWheels[ i ].wheelLeftRight == WheelPosition.LEFT_WHEEL )
+                {
+                    travelDistance = ( ( -currentWheelCollider.transform.InverseTransformPoint( wheelHit.point ).y
+                     - currentWheelCollider.radius ) / currentWheelCollider.suspensionDistance );
+                }
+                else
+                {
+                    travelDistance = ( ( -currentWheelCollider.transform.InverseTransformPoint( wheelHit.point ).y
+                       - currentWheelCollider.radius ) / currentWheelCollider.suspensionDistance );
+                }
+            }
+            stabilizerDistances[ i ] = travelDistance;
         }
-        if ( frontRightWheel.GetGroundHit( out wheelHit ) )
+        for ( int i = 0; i < 4; i += 2 )
         {
-            traveltRight = ( ( -frontRightWheel.transform.InverseTransformPoint( wheelHit.point ).y
-                               - frontRightWheel.radius ) / frontRightWheel.suspensionDistance );
+            float antiRollForce = ( stabilizerDistances[ i + 1 ] - stabilizerDistances[ i ] * stabilizierForce );
+            //Right Wheels
+            if ( vehicleWheels[ i ].mainWheelCollider.isGrounded )
+            {
+                mainVehiclePhysics.rigidbody.AddForceAtPosition( vehicleWheels[ i ].mainWheelCollider.transform.up
+                                                                 * antiRollForce,
+                                                                 vehicleWheels[ i ].mainWheelCollider.transform.position );
+            }
+            //Left Wheels
+            if ( vehicleWheels[ i + 1 ].mainWheelCollider.isGrounded )
+            {
+                mainVehiclePhysics.rigidbody.AddForceAtPosition( vehicleWheels[ i + 1 ].mainWheelCollider.transform.up
+                                                                 * -antiRollForce,
+                                                                 vehicleWheels[ i + 1 ].mainWheelCollider.transform.position );
+            }
         }
-        float antiRollForce = ( travelLeft - traveltRight ) * stabilizierForce;
-        if ( frontLeftWheel.GetGroundHit( out wheelHit ) )
-        {
-            vehicleRigidBody.AddForceAtPosition( frontLeftWheel.transform.up * -antiRollForce,
-                                         frontLeftWheel.transform.position );
-        }
-        if ( frontRightWheel.GetGroundHit( out wheelHit ) )
-        {
-            vehicleRigidBody.AddForceAtPosition( frontRightWheel.transform.up * antiRollForce,
-                                                 frontRightWheel.transform.position );
-        }
-
-    }
-
-    private void RearStabilizerBar ( )
-    {
-        WheelHit wheelHit;
-        float travelLeft = 1.0f;
-        float traveltRight = 1.0f;
-        if ( rearLeftWheel.GetGroundHit( out wheelHit ) )
-        {
-            travelLeft = ( ( -rearLeftWheel.transform.InverseTransformPoint( wheelHit.point ).y
-                             - rearLeftWheel.radius ) / rearLeftWheel.suspensionDistance );
-        }
-        if ( rearRightWheel.GetGroundHit( out wheelHit ) )
-        {
-            traveltRight = ( ( -rearRightWheel.transform.InverseTransformPoint( wheelHit.point ).y
-                               - rearRightWheel.radius ) / rearRightWheel.suspensionDistance );
-        }
-        float antiRollForce = ( travelLeft - traveltRight ) * stabilizierForce;
-        if ( rearLeftWheel.GetGroundHit( out wheelHit ) )
-        {
-            vehicleRigidBody.AddForceAtPosition( rearLeftWheel.transform.up * -antiRollForce,
-                                         rearLeftWheel.transform.position );
-        }
-        if ( rearRightWheel.GetGroundHit( out wheelHit ) )
-        {
-            vehicleRigidBody.AddForceAtPosition( rearRightWheel.transform.up * antiRollForce,
-                                                 rearRightWheel.transform.position );
-        }
-
     }
 
     private void RearWheelsGrounded ( )
-    { 
+    {
         WheelHit wheelHit;
-        if( rearRightWheel.GetGroundHit( out wheelHit ) 
-            && rearLeftWheel.GetGroundHit( out wheelHit ) )
+        foreach ( VehicleWheel wheel in vehicleWheels )
         {
-            wheelsGrounded = WheelsOnGround.REAR_WHEELS_GROUNDED;
-            return;
+            if ( wheel.wheelFrontRear == WheelPosition.FRONT_WHEEL )
+            {
+                continue;
+            }
+            if ( wheel.mainWheelCollider.GetGroundHit( out wheelHit ) )
+            {
+                wheelsGrounded = WheelsOnGround.REAR_WHEELS_GROUNDED;
+                return;
+            }
+            wheelsGrounded = WheelsOnGround.REAR_WHEELS_IN_AIR;
         }
-        wheelsGrounded = WheelsOnGround.REAR_WHEELS_IN_AIR;
     }
 }

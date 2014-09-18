@@ -404,6 +404,8 @@ function UpdateWheelGraphics(relativeVelocity : Vector3)
 			var ea : Vector3 = w.wheelGraphic.parent.localEulerAngles;
 			ea.y = steer * maximumTurn;
 			w.wheelGraphic.parent.localEulerAngles = ea;
+            Debug.Log( " Ground Speed " + w.groundSpeed.z + " WheelRadius " + wheelRadius );
+
 			w.tireGraphic.Rotate(Vector3.right * (w.groundSpeed.z / wheelRadius) * Time.deltaTime * Mathf.Rad2Deg);
 		}
 		else if(!handbrake && w.driveWheel)

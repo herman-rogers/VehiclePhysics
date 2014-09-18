@@ -8,6 +8,8 @@ public class EngineComponent : MonoBehaviour
     private float steer;
     private float motor;
     private float brake;
+    private float minimumTurn = 10;
+    private float maximumTurn = 15;
     private static double engineSpeed;
     private GearsComponent gearComponent;
 
@@ -32,6 +34,11 @@ public class EngineComponent : MonoBehaviour
         steer = Input.GetAxis( "Horizontal" );
         vehicleThrottle = Input.GetAxis( "Acceleration" ) * 30;
         brake = Input.GetAxis( "Brake" );
+    }
+
+    public float SteeringSpeed ( )
+    {
+        return steer * maximumTurn;
     }
 
     public static double GetEngineSpeed ( )
@@ -98,11 +105,11 @@ public class EngineComponent : MonoBehaviour
         float speed = rigidbody.velocity.magnitude;
         if ( speed > VehiclePhysics.speedCap /2 )
         {
-            return 10;
+            return minimumTurn;
         }
         float speedIndex = 1 - ( speed / ( VehiclePhysics.speedCap / 2 ) );
         //10 is the minimum turn and 15 is the maximum turn
-        return 10 + speedIndex * ( 15 - 10 );
+        return minimumTurn + speedIndex * ( maximumTurn - maximumTurn );
     }
 
     private bool SameSign ( float firstValue, float secondValue )

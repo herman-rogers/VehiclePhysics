@@ -8,9 +8,14 @@ public class VehiclePhysics : MonoBehaviour
     public WheelCollider rearLeftWheel;
     public const int numberOfGears = 6;
     public const float speedCap = 180;
-    private GearsComponent gearsComponent;
-    private EngineComponent engineComponent;
-    private WheelComponent wheelComponent;
+    [HideInInspector]
+    public GearsComponent gearsComponent;
+    [HideInInspector]
+    public EngineComponent engineComponent;
+    [HideInInspector]
+    public WheelComponent wheelComponent;
+    [HideInInspector]
+    public WheelCollider[ ] vehicleWheels;
     private Vector3 dragMultiplier = new Vector3( 2, 5, 1 );
     private float steer;
     private float motor;
@@ -18,13 +23,13 @@ public class VehiclePhysics : MonoBehaviour
 
     private void Start ( )
     {
-        WheelCollider[ ] vehicleWheels = new WheelCollider[ ]{ frontRightWheel, 
-                                                               frontLeftWheel, 
-                                                               rearRightWheel, 
-                                                               rearLeftWheel };
+        vehicleWheels = new WheelCollider[ ]{ frontRightWheel, 
+                                              frontLeftWheel, 
+                                              rearRightWheel, 
+                                              rearLeftWheel };
         gearsComponent = new GearsComponent( 6, 180 );
         engineComponent = GetComponent<EngineComponent>( );
-        wheelComponent = new WheelComponent( vehicleWheels, rigidbody );
+        wheelComponent = new WheelComponent( gameObject );
         rigidbody.centerOfMass += new Vector3( 0, 0, 1.0f );
     }
     private void Update ( )
@@ -32,6 +37,7 @@ public class VehiclePhysics : MonoBehaviour
         Vector3 vehicleVelocity = transform.InverseTransformDirection( rigidbody.velocity );
         gearsComponent.UpdateGears( vehicleVelocity );
         engineComponent.EngineUpdate( );
+        wheelComponent.WheelUpdate( vehicleVelocity );
     }
 
     private void FixedUpdate ( )
@@ -39,10 +45,6 @@ public class VehiclePhysics : MonoBehaviour
         Vector3 vehicleVelocity = transform.InverseTransformDirection( rigidbody.velocity );
         engineComponent.EngineFixedUpdate( vehicleVelocity, gearsComponent );
         wheelComponent.WheelFixedUpdate( vehicleVelocity );
-        //if ( WheelComponent.wheelsGrounded == WheelsOnGround.REAR_WHEELS_IN_AIR )
-        //{
-        //    return;
-        //}
         UpdateVehicleDrag( vehicleVelocity );
     }
 

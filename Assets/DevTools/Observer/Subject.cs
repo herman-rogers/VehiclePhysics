@@ -4,64 +4,64 @@ using System.Linq;
 
 public class Subject : MonoBehaviour
 {
-    private static readonly List< Observer > listOfObservers = new List< Observer >( );
-    private static List< GameObject > listOfUnityObservers = new List< GameObject >( );
-    private static Vector3 stubbedVector3;
+    private static readonly List<Observer> listOfObservers = new List<Observer>( );
+    private static List<GameObject> listOfUnityObservers = new List<GameObject>( );
+    private static Vector3 stubbedVector3 = new Vector3( 0, 0, 0 );
 
-    public static void AddObserver( Observer newObserver )
+    public static void AddObserver ( Observer newObserver )
     {
-        if( !listOfObservers.Contains( newObserver ) )
+        if ( !listOfObservers.Contains( newObserver ) )
         {
             listOfObservers.Add( newObserver );
-			return;
-        } 
+            return;
+        }
         Debug.LogError( "Cannot Add The Same Observer Twice" );
     }
 
-    public static void AddUnityObservers( )
+    public static void AddUnityObservers ( )
     {
         listOfUnityObservers = ( GameObject.FindGameObjectsWithTag( "UnityObserver" ) ).ToList( );
     }
 
-    public static void RemoveAllObservers( )
+    public static void RemoveAllObservers ( )
     {
         listOfObservers.Clear( );
     }
 
-    public static int ObserverCount( )
+    public static int ObserverCount ( )
     {
         return listOfObservers.Count;
     }
 
-    public static int UnityObserverCount( )
+    public static int UnityObserverCount ( )
     {
         return listOfUnityObservers.Count( );
     }
 
-    public static void Notify( string staticEventName )
-    { 
+    public static void Notify ( string staticEventName )
+    {
         var stubbedObject = new Object( );
         SendToObservers( stubbedObject, staticEventName, "NoMessage", stubbedVector3 );
     }
 
-    public static void NotifyExtendedMessage( string staticEventName, string extendedMessage )
+    public static void NotifyExtendedMessage ( string staticEventName, string extendedMessage )
     {
         var stubbedObject = new Object( );
         SendToObservers( stubbedObject, staticEventName, extendedMessage, stubbedVector3 );
     }
 
-    public static void NotifyObject( Object sender, string staticEventName, string extendedMessage )
+    public static void NotifyObject ( Object sender, string staticEventName, string extendedMessage )
     {
         SendToObservers( sender, staticEventName, extendedMessage, stubbedVector3 );
     }
 
-    public static void NotifyCoordinates( string staticEventName,Vector3 worldCoordinates )
+    public static void NotifyCoordinates ( string staticEventName, Vector3 worldCoordinates )
     {
         var stubbedObject = new Object( );
         SendToObservers( stubbedObject, staticEventName, "NoMessage", worldCoordinates );
     }
 
-    private static void SendToObservers( Object sender, string eventName, string extendedMessage, Vector3 coordinates )
+    private static void SendToObservers ( Object sender, string eventName, string extendedMessage, Vector3 coordinates )
     {
         GarbageCollectObservers( );
         foreach ( var observer in listOfObservers )
@@ -71,18 +71,18 @@ public class Subject : MonoBehaviour
         NotifyUnityObservers( sender, eventName, extendedMessage, coordinates );
     }
 
-    private static void NotifyUnityObservers( Object sender, string unityEventName, string extendedMessage, Vector3 coordinates )
+    private static void NotifyUnityObservers ( Object sender, string unityEventName, string extendedMessage, Vector3 coordinates )
     {
         foreach ( var unityObserver in listOfUnityObservers )
         {
-			List< UnityObserver > ObserverObjects = unityObserver.GetComponents< UnityObserver >( ).ToList( );
-			ObserverObjects.ForEach( item => 
-			                         item.OnNotify( sender, 
-			                                        new EventArguments( unityEventName, extendedMessage, coordinates ) ) );
+            List<UnityObserver> ObserverObjects = unityObserver.GetComponents<UnityObserver>( ).ToList( );
+            ObserverObjects.ForEach( item =>
+                                     item.OnNotify( sender,
+                                                    new EventArguments( unityEventName, extendedMessage, coordinates ) ) );
         }
     }
 
-    public static void GarbageCollectObservers( )
+    public static void GarbageCollectObservers ( )
     {
         listOfObservers.RemoveAll( item => item == null );
         listOfUnityObservers.RemoveAll( item => item == null );
