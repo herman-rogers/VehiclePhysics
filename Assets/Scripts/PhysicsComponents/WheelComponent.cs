@@ -34,11 +34,6 @@ public struct VehicleWheel
         wheelRadius = ( visualWheel.renderer.bounds.size.y / 2 );
         mainWheelCollider.radius = wheelRadius;
     }
-
-    public void MatchVisualWheelToSuspension( )
-    {
-        visualWheel.position = mainWheelCollider.transform.position;
-    }
 }
 
 public class WheelComponent
@@ -85,6 +80,13 @@ public class WheelComponent
         UpdateWheelGraphics( velocity );
     }
 
+    public void WheelFixedUpdate ( Vector3 velocity )
+    {
+        WheelFriction( velocity );
+        WheelStabilizerBars( );
+        RearWheelsGrounded( );
+    }
+
     private void UpdateWheelGraphics ( Vector3 velocity )
     {
         foreach ( VehicleWheel currentWheel in vehicleWheels )
@@ -92,30 +94,36 @@ public class WheelComponent
             WheelHit wheelHit = new WheelHit( );
             if ( currentWheel.mainWheelCollider.GetGroundHit( out wheelHit ) )
             {
-                currentWheel.visualWheel.localPosition = currentWheel.mainWheelCollider.transform.up
-                    * ( currentWheel.wheelRadius
-                    + currentWheel.mainWheelCollider.transform.InverseTransformPoint( wheelHit.point ).y );
                 Vector3 wheelVelocity = mainVehiclePhysics.rigidbody.GetPointVelocity( wheelHit.point );
-                Vector3 groundSpeed = currentWheel.visualWheel.InverseTransformDirection( wheelVelocity );
-                currentWheel.MatchVisualWheelToSuspension( );
+                Vector3 localWheelVelocity = currentWheel.visualWheel.parent.InverseTransformDirection( wheelVelocity );
                 if ( currentWheel.wheelFrontRear == WheelPosition.FRONT_WHEEL )
                 {
-                    Vector3 cachedWheelRotation = currentWheel.visualWheel.localEulerAngles;
+                    //Steering Rotation
+                    Vector3 cachedWheelRotation = currentWheel.visualWheel.parent.localEulerAngles;
                     cachedWheelRotation.y = mainVehiclePhysics.engineComponent.SteeringSpeed( );
-                    currentWheel.visualWheel.localEulerAngles = cachedWheelRotation;
+                    currentWheel.visualWheel.parent.localEulerAngles = cachedWheelRotation;
+
+                    //Wheel Rotation
+                    currentWheel.visualWheel.Rotate( Vector3.right * ( localWheelVelocity.z / currentWheel.wheelRadius )
+                                               * Time.deltaTime * Mathf.Rad2Deg );
                 }
-                currentWheel.visualWheel.parent.Rotate( Vector3.right * ( groundSpeed.z / currentWheel.wheelRadius )
-                                                 * Time.deltaTime * Mathf.Rad2Deg );
-                Debug.Log( ( groundSpeed.z / currentWheel.wheelRadius ) );
+                else
+                {
+                    if ( mainVehiclePhysics.engineComponent.GetVehicleThrottle( ) > 0.0f )
+                    {
+                        float rearWheelVelocity = ( ( mainVehiclePhysics.engineComponent.GetVehicleThrottle( ) * 10 ) *
+                                                    localWheelVelocity.z );
+                        currentWheel.visualWheel.Rotate( Vector3.right * ( rearWheelVelocity / currentWheel.wheelRadius )
+                                                         * Time.deltaTime * Mathf.Rad2Deg );
+                    }
+                    else
+                    {
+                        currentWheel.visualWheel.Rotate( Vector3.right * ( localWheelVelocity.z / currentWheel.wheelRadius )
+                                   * Time.deltaTime * Mathf.Rad2Deg );
+                    }
+                }
             }
         }
-    }
-
-    public void WheelFixedUpdate ( Vector3 velocity )
-    {
-        WheelFriction( velocity );
-        WheelStabilizerBars( );
-        RearWheelsGrounded( );
     }
 
     private void WheelFrictionCurve ( )
@@ -186,20 +194,31 @@ public class WheelComponent
         for ( int i = 0; i < 4; i += 2 )
         {
             float antiRollForce = ( stabilizerDistances[ i + 1 ] - stabilizerDistances[ i ] * stabilizierForce );
-            //Right Wheels
-            if ( vehicleWheels[ i ].mainWheelCollider.isGrounded )
-            {
-                mainVehiclePhysics.rigidbody.AddForceAtPosition( vehicleWheels[ i ].mainWheelCollider.transform.up
-                                                                 * antiRollForce,
-                                                                 vehicleWheels[ i ].mainWheelCollider.transform.position );
-            }
-            //Left Wheels
-            if ( vehicleWheels[ i + 1 ].mainWheelCollider.isGrounded )
-            {
-                mainVehiclePhysics.rigidbody.AddForceAtPosition( vehicleWheels[ i + 1 ].mainWheelCollider.transform.up
-                                                                 * -antiRollForce,
-                                                                 vehicleWheels[ i + 1 ].mainWheelCollider.transform.position );
-            }
+            StabilizeRightWheels( i, antiRollForce );
+            StabilizeLeftWheels( ( i + 1 ), antiRollForce );
+            
+            Debug.Log( vehicleWheels[ i ].visualWheel.gameObject.name + "  " +
+                       vehicleWheels[i + 1 ].visualWheel.gameObject.name  );
+        }
+    }
+
+    private void StabilizeRightWheels ( int wheelCount, float antiRollForce )
+    {
+        if ( vehicleWheels[ wheelCount ].mainWheelCollider.isGrounded )
+        {
+            mainVehiclePhysics.rigidbody.AddForceAtPosition( vehicleWheels[ wheelCount ].mainWheelCollider.transform.up
+                                                             * antiRollForce,
+                                                             vehicleWheels[ wheelCount ].mainWheelCollider.transform.position );
+        }
+    }
+
+    private void StabilizeLeftWheels ( int wheelCount, float antiRollForce )
+    {
+        if ( vehicleWheels[ wheelCount ].mainWheelCollider.isGrounded )
+        {
+            mainVehiclePhysics.rigidbody.AddForceAtPosition( vehicleWheels[ wheelCount ].mainWheelCollider.transform.up
+                                                             * -antiRollForce,
+                                                             vehicleWheels[ wheelCount ].mainWheelCollider.transform.position );
         }
     }
 

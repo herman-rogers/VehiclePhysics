@@ -329,7 +329,7 @@ function UpdateWheelGraphics(relativeVelocity : Vector3)
 			w.wheelGraphic.localPosition = wheel.transform.up * (wheelRadius + wheel.transform.InverseTransformPoint(wh.point).y);
 			w.wheelVelo = rigidbody.GetPointVelocity(wh.point);
 			w.groundSpeed = w.wheelGraphic.InverseTransformDirection(w.wheelVelo);
-			
+            Debug.Log( w.wheelVelo.z + "vs. groundspeed " + w.groundSpeed.z );
 			// Code to handle skidmark drawing. Not covered in the tutorial
 			if(skidmarks)
 			{
@@ -404,9 +404,9 @@ function UpdateWheelGraphics(relativeVelocity : Vector3)
 			var ea : Vector3 = w.wheelGraphic.parent.localEulerAngles;
 			ea.y = steer * maximumTurn;
 			w.wheelGraphic.parent.localEulerAngles = ea;
-            Debug.Log( " Ground Speed " + w.groundSpeed.z + " WheelRadius " + wheelRadius );
 
 			w.tireGraphic.Rotate(Vector3.right * (w.groundSpeed.z / wheelRadius) * Time.deltaTime * Mathf.Rad2Deg);
+            Debug.Log((w.groundSpeed.z / wheelRadius) * Time.deltaTime * Mathf.Rad2Deg);
 		}
 		else if(!handbrake && w.driveWheel)
 		{

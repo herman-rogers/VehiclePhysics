@@ -4,7 +4,8 @@ using System.Collections;
 public enum ToggleDebugViewable
 {
 	DEBUG_VIEWABLE,
-	DEBUG_HIDDEN
+	DEBUG_HIDDEN,
+    DEBUG_SHOW_EXTENSIONS
 }
 
 public class SceneDebugger : UnityObserver
@@ -16,7 +17,6 @@ public class SceneDebugger : UnityObserver
 	private SceneReverser sceneReverser;
 	private SceneTransformTracker transformTracker;
 	private bool coroutineRunning;
-    private bool showVehicleStats = false;
 	private Rect dragWindow = new Rect( Screen.width - 220, 0, 250, 450 );
 
 	void Start( )
@@ -44,13 +44,14 @@ public class SceneDebugger : UnityObserver
 
 	void OnGUI( )
 	{
-		if( toggleView == ToggleDebugViewable.DEBUG_VIEWABLE  )
+		if( toggleView == ToggleDebugViewable.DEBUG_VIEWABLE ||
+            toggleView == ToggleDebugViewable.DEBUG_SHOW_EXTENSIONS )
 		{
 			ShowMainGUI( );
 		}
-        if( showVehicleStats )
+        if( toggleView == ToggleDebugViewable.DEBUG_SHOW_EXTENSIONS )
         {
-            //vehicleStats.ShowVehicleStats( );
+            VehicleExtension.ShowMainGUI( );
         }
 		transformTracker.TrackTransformsInScene( );
 	}
@@ -75,7 +76,6 @@ public class SceneDebugger : UnityObserver
 		GUI.Label( new Rect( 10, 20, 200, 100 ), SceneFPS.GetFramesPerSecond( ) );
 		GUI.Label( new Rect( 10, 40, 200, 100 ), "Obs: " + Subject.ObserverCount( ) );
 		GUI.Label( new Rect( 10, 60, 200, 100 ), "UnityObs: " + Subject.UnityObserverCount( ) );
-        GUI.Label( new Rect( 10, 80, 200, 100 ), "Speed: " + EngineComponent.GetEngineSpeed( ) );
 		GUI.Label( new Rect( 10, 100, 200, 100 ), "Reverser Target: " + currentReverserTarget );
 		if ( GUI.Button( new Rect( 10, 140, 200, 20 ), "Clear Tracked" ) )
 		{
@@ -83,7 +83,7 @@ public class SceneDebugger : UnityObserver
 		}
         if ( GUI.Button( new Rect( 10, 400, 200, 20 ), "Show Vehicle Stats" ) )
 		{
-		    showVehicleStats = !showVehicleStats;
+            toggleView = ToggleDebugViewable.DEBUG_SHOW_EXTENSIONS;
 		}
 		GUI.Label( new Rect( 10, 160, 200, 20 ), "Tracked Objects: " );
 		transformTracker.ListTrackedObjects( );

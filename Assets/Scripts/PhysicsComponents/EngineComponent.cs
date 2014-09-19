@@ -10,8 +10,9 @@ public class EngineComponent : MonoBehaviour
     private float brake;
     private float minimumTurn = 10;
     private float maximumTurn = 15;
-    private static double engineSpeed;
     private GearsComponent gearComponent;
+    private static double engineSpeed;
+    private const float horsePowerMultiplier = 50;
 
     public void EngineUpdate ( )
     {
@@ -29,6 +30,7 @@ public class EngineComponent : MonoBehaviour
         ApplySteering( vehicleVelocity );
     }
 
+    //TODO: Move this into an Input Component Script
     private void UpdateInput ( )
     {
         steer = Input.GetAxis( "Horizontal" );
@@ -41,6 +43,11 @@ public class EngineComponent : MonoBehaviour
         return steer * maximumTurn;
     }
 
+    public float GetVehicleThrottle ( )
+    {
+        return vehicleThrottle;
+    }
+
     public static double GetEngineSpeed ( )
     {
         return engineSpeed;
@@ -51,15 +58,15 @@ public class EngineComponent : MonoBehaviour
         float vehicleGear = gears.currentGear;
         if ( vehicleThrottle == 0 )
         {
-            horsePower -= Time.deltaTime * 50;
+            horsePower -= Time.deltaTime * horsePowerMultiplier;
         }
         else if ( SameSign( velocity.z, vehicleThrottle ) )
         {
-            horsePower += Time.deltaTime * 50 * gears.GetNormalizedPower( horsePower );
+            horsePower += Time.deltaTime * horsePowerMultiplier * gears.GetNormalizedPower( horsePower );
         }
         else
         {
-            horsePower += Time.deltaTime * 50;
+            horsePower += Time.deltaTime * horsePowerMultiplier;
         }
         if ( vehicleGear == 0 )
         {
@@ -91,8 +98,8 @@ public class EngineComponent : MonoBehaviour
 
     private void ApplySteering ( Vector3 velocity )
     {
-        double turnRadius = 3.0 / Mathf.Sin( ( 90 - ( steer * 30 ) ) * Mathf.Deg2Rad );
-        float minMaxTurn = SpeedTurnRatio( );
+        double turnRadius = 3.0 / Mathf.Sin( ( 90 - ( steer * 10 ) ) * Mathf.Deg2Rad );
+        float minMaxTurn = ( float )SpeedTurnRatio( );
         float turnSpeed = Mathf.Clamp( velocity.z / ( float )turnRadius, -minMaxTurn / 10, minMaxTurn / 10 );
         transform.RotateAround( transform.position + transform.right * ( float )turnRadius * steer,
                                 transform.up,
@@ -100,16 +107,11 @@ public class EngineComponent : MonoBehaviour
         //Add Handbrake here
     }
 
-    private float SpeedTurnRatio ( )
+    private double SpeedTurnRatio ( )
     {
-        float speed = rigidbody.velocity.magnitude;
-        if ( speed > VehiclePhysics.speedCap /2 )
-        {
-            return minimumTurn;
-        }
-        float speedIndex = 1 - ( speed / ( VehiclePhysics.speedCap / 2 ) );
-        //10 is the minimum turn and 15 is the maximum turn
-        return minimumTurn + speedIndex * ( maximumTurn - maximumTurn );
+        Debug.Log( " speed index: " + ( ( maximumTurn - minimumTurn ) / engineSpeed )
+                   + "\nEngine Speed: " + engineSpeed );
+        return ( ( maximumTurn - minimumTurn ) / engineSpeed );
     }
 
     private bool SameSign ( float firstValue, float secondValue )

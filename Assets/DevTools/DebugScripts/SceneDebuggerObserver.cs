@@ -18,7 +18,8 @@ public class SceneDebuggerObserver : Observer
 
 	private void ToggleCanSeeDebug( )
 	{
-		if( SceneDebugger.toggleView == ToggleDebugViewable.DEBUG_VIEWABLE )
+		if( SceneDebugger.toggleView == ToggleDebugViewable.DEBUG_VIEWABLE
+            || SceneDebugger.toggleView == ToggleDebugViewable.DEBUG_SHOW_EXTENSIONS )
 		{
 			SceneDebugger.toggleView = ToggleDebugViewable.DEBUG_HIDDEN;
 			return;
