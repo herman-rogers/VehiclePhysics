@@ -8,14 +8,10 @@ public class VehiclePhysics : MonoBehaviour
     public WheelCollider rearLeftWheel;
     public const int numberOfGears = 6;
     public const float speedCap = 180;
-    [HideInInspector]
-    public GearsComponent gearsComponent;
-    [HideInInspector]
-    public EngineComponent engineComponent;
-    [HideInInspector]
-    public WheelComponent wheelComponent;
-    [HideInInspector]
-    public WheelCollider[ ] vehicleWheels;
+    public GearsComponent gearsComponent { get; private set; }
+    public EngineComponent engineComponent { get; private set; }
+    public WheelComponent wheelComponent { get; private set; }
+    public WheelCollider[ ] vehicleWheels { get; private set; }
     private Vector3 dragMultiplier = new Vector3( 2, 5, 1 );
     private float steer;
     private float motor;
@@ -28,8 +24,9 @@ public class VehiclePhysics : MonoBehaviour
                                               rearRightWheel, 
                                               rearLeftWheel };
         gearsComponent = new GearsComponent( 6, 180 );
-        engineComponent = GetComponent<EngineComponent>( );
         wheelComponent = new WheelComponent( gameObject );
+        engineComponent = gameObject.AddComponent<EngineComponent>( );
+        engineComponent.Start( );
         rigidbody.centerOfMass += new Vector3( 0, 0, 1.0f );
     }
     private void Update ( )
@@ -43,7 +40,7 @@ public class VehiclePhysics : MonoBehaviour
     private void FixedUpdate ( )
     {
         Vector3 vehicleVelocity = transform.InverseTransformDirection( rigidbody.velocity );
-        engineComponent.EngineFixedUpdate( vehicleVelocity, gearsComponent );
+        engineComponent.EngineFixedUpdate( vehicleVelocity );
         wheelComponent.WheelFixedUpdate( vehicleVelocity );
         UpdateVehicleDrag( vehicleVelocity );
     }
