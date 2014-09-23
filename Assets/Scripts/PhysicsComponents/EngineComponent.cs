@@ -22,6 +22,8 @@ public class EngineComponent : MonoBehaviour
     private const float amountOfDragForVehicleShape = 0.30f; //the tunneltest for a corvette
     private const float airFrictionDrag = 0.5f;//constant value for the drag of air on a vehicle
     private const float pi = 3.14f;
+    private float gearRatio = 2.66f;
+    private float differentialRatio = 3.42f;
 
     public void Start ( )
     {
@@ -47,7 +49,7 @@ public class EngineComponent : MonoBehaviour
     private void UpdateInput ( )
     {
         steer = Input.GetAxis( "Horizontal" );
-        vehicleThrottle = Input.GetAxis( "Acceleration" ) * 30;
+        vehicleThrottle = Input.GetAxis( "Acceleration" );
         brake = Input.GetAxis( "Brake" );
     }
 
@@ -70,25 +72,21 @@ public class EngineComponent : MonoBehaviour
     {
         Vector3 velocity = rigidbody.velocity;
         float vehicleSpeed = Mathf.Sqrt( ( velocity.x * velocity.x ) + ( velocity.y * velocity.y ) );
-
-        //Ftraction = u * EngineForce
-
-
-
+        float acceleration = ( ( rigidbody.mass / 2 ) * 9.8f ) / rigidbody.mass;
         //Total Longitudinal Force Flong = Ftraction + Fdrag + Frr
         float engineRPM = CalculateEngineRPM( );
-        float torque = CalculateTorque( engineRPM );
-        float horsePower = ( torque * engineRPM ) / 5252;
-
+        float engineTorque = ( vehicleThrottle * acceleration ) * CalculateTorque( engineRPM );
+        float horsePower = ( engineTorque * engineRPM ) / 5252;
+        
         //transmission efficiency
         //Fdrive = u * Tengine *xg * xd * n / Rw
         //xg is the gear ratio and xd is the differential ratio, n is transmission effeciency
         //TODO: add in differential ratio and the trasmission efficiency
 
-        float torqueToRearWheels =  torque * ( 0.7f / ( wheelComponent.vehicleWheels[ 0 ].wheelRadius ) );
+        float transmissionEfficiency = ( 0.7f / ( wheelComponent.vehicleWheels[ 0 ].wheelRadius ) );
+        float torqueToRearWheels = engineTorque * gearRatio * differentialRatio * transmissionEfficiency;
 
         //Weight of Car and max amount of traction the rear wheels can provide
-        float acceleration = ( ( rigidbody.mass / 2 ) * 9.8f ) / rigidbody.mass;
 
         //Vehicle Resistance
         //float coefficientDrag = amountOfDragForVehicleShape * vehicleFrontalArea 
@@ -96,13 +94,11 @@ public class EngineComponent : MonoBehaviour
         //float forwardsDrag = airFrictionDrag * coefficientDrag * acceleration;
         //float rollingResistance = 30 * coefficientDrag;
 
-        float driveTraction = vehicleThrottle * torqueToRearWheels * acceleration;
+        float driveTraction = acceleration * vehicleThrottle * torqueToRearWheels;
 
         Debug.Log( "RPMs: " + engineRPM
-                   + "\n DriveTraction: " + driveTraction );
-
-
-
+                   + " \n Torque: " + engineTorque
+                   + " :: HorsePower: " + horsePower );
 
         rigidbody.AddForce( transform.forward * Time.deltaTime * ( driveTraction  ) );
     
@@ -113,8 +109,8 @@ public class EngineComponent : MonoBehaviour
         float wheelRotation = ( wheelComponent.vehicleWheels[ 2 ].mainWheelCollider.rpm
                                 + wheelComponent.vehicleWheels[ 3 ].mainWheelCollider.rpm );
         //TODO: Add in more roboust gear ratio and differential ratio
-        float gearRatio = 2.66f;
-        float differentialRatio = 3.42f;
+
+        //TODO: convert to coordinate system
         float rpm = vehicleThrottle * ( ( wheelRotation * gearRatio * differentialRatio * 60 ) / ( 2 * pi ) );
         if( rpm < 1000 )
         {
@@ -129,7 +125,7 @@ public class EngineComponent : MonoBehaviour
 
     private float CalculateTorque ( float rpms )
     {
-        //RPMs is in ft lbs
+        //RPMs is in ft/lbs
         if ( rpms < 1000 )
         {
             return 300;
@@ -151,56 +147,56 @@ public class EngineComponent : MonoBehaviour
 
 
 
-    private void HorsePower ( Vector3 velocity )
-    {
+    //private void HorsePower ( Vector3 velocity )
+    //{
 
-        float vehicleGear = gearComponent.currentGear;
-        if ( vehicleThrottle == 0 )
-        {
-            horsePower -= Time.deltaTime * horsePowerMultiplier;
-        }
-        else if ( SameSign( velocity.z, vehicleThrottle ) )
-        {
-            horsePower += Time.deltaTime
-                          * horsePowerMultiplier
-                          * gearComponent.GetNormalizedPower( horsePower );
-        }
-        else
-        {
-            horsePower += Time.deltaTime * horsePowerMultiplier;
-        }
-        if ( vehicleGear == 0 )
-        {
-            horsePower = Mathf.Clamp( horsePower, 0, gearComponent.GetGearValue( 0 ) );
-        }
-        else
-        {
-            horsePower = Mathf.Clamp( horsePower,
-                                      gearComponent.GetGearValue( vehicleGear - 1 ),
-                                      gearComponent.GetGearValue( vehicleGear ) );
-        }
-    }
+    //    float vehicleGear = gearComponent.currentGear;
+    //    if ( vehicleThrottle == 0 )
+    //    {
+    //        horsePower -= Time.deltaTime * horsePowerMultiplier;
+    //    }
+    //    else if ( SameSign( velocity.z, vehicleThrottle ) )
+    //    {
+    //        horsePower += Time.deltaTime
+    //                      * horsePowerMultiplier
+    //                      * gearComponent.GetNormalizedPower( horsePower );
+    //    }
+    //    else
+    //    {
+    //        horsePower += Time.deltaTime * horsePowerMultiplier;
+    //    }
+    //    if ( vehicleGear == 0 )
+    //    {
+    //        horsePower = Mathf.Clamp( horsePower, 0, gearComponent.GetGearValue( 0 ) );
+    //    }
+    //    else
+    //    {
+    //        horsePower = Mathf.Clamp( horsePower,
+    //                                  gearComponent.GetGearValue( vehicleGear - 1 ),
+    //                                  gearComponent.GetGearValue( vehicleGear ) );
+    //    }
+    //}
 
-    private void ApplyThrottle ( Vector3 velocity )
-    {
-        float throttleForce = 0.0f;
-        float brakeForce = 0.0f;
-        if ( WheelComponent.wheelsGrounded == WheelsOnGround.REAR_WHEELS_IN_AIR )
-        {
-            return;
-        }
-        if ( vehicleThrottle > 0.0f )
-        {
-            throttleForce = Mathf.Sign( vehicleThrottle ) * horsePower * rigidbody.mass;
-        }
-        if ( brake > 0.0f )
-        {
-            brakeForce = -brake * ( gearComponent.GetGearValue( 0 ) * rigidbody.mass );
-        }
-        rigidbody.AddForce( transform.forward * Time.deltaTime * ( throttleForce + brakeForce ) );
-        Debug.Log( throttleForce );
-        engineSpeed = rigidbody.velocity.magnitude;
-    }
+    //private void ApplyThrottle ( Vector3 velocity )
+    //{
+    //    float throttleForce = 0.0f;
+    //    float brakeForce = 0.0f;
+    //    if ( WheelComponent.wheelsGrounded == WheelsOnGround.REAR_WHEELS_IN_AIR )
+    //    {
+    //        return;
+    //    }
+    //    if ( vehicleThrottle > 0.0f )
+    //    {
+    //        throttleForce = Mathf.Sign( vehicleThrottle ) * horsePower * rigidbody.mass;
+    //    }
+    //    if ( brake > 0.0f )
+    //    {
+    //        brakeForce = -brake * ( gearComponent.GetGearValue( 0 ) * rigidbody.mass );
+    //    }
+    //    rigidbody.AddForce( transform.forward * Time.deltaTime * ( throttleForce + brakeForce ) );
+    //    Debug.Log( throttleForce );
+    //    engineSpeed = rigidbody.velocity.magnitude;
+    //}
 
     private void ApplySteering ( Vector3 velocity )
     {
