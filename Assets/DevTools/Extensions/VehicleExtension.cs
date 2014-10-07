@@ -12,8 +12,7 @@ public class VehicleExtension : MonoBehaviour
 
     private static void VehicleStatsDragWindow ( int windowID )
     {
-        GUI.Label( new Rect( 10, 20, 400, 100 ), "Vehicle Speed: " +
-                                                  EngineComponent.GetEngineSpeed( ).ToString( ) );
+        GUI.Label( new Rect( 10, 20, 400, 100 ), "Vehicle Speed: " );
         //GUI.Label( new Rect( 10, 80, 200, 100 ), "Speed: " + EngineComponent.GetEngineSpeed( ) );
         //GUI.Label( new Rect( 10, 40, 200, 100 ), "Obs: " + Subject.ObserverCount( ) );
         //GUI.Label( new Rect( 10, 60, 200, 100 ), "UnityObs: " + Subject.UnityObserverCount( ) );

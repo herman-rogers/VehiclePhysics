@@ -32,7 +32,7 @@ public class VehiclePhysics : MonoBehaviour
     private void Update ( )
     {
         Vector3 vehicleVelocity = transform.InverseTransformDirection( rigidbody.velocity );
-        gearsComponent.UpdateGears( vehicleVelocity );
+        //gearsComponent.UpdateGears( vehicleVelocity );
         engineComponent.EngineUpdate( );
         wheelComponent.WheelUpdate( vehicleVelocity );
     }
@@ -42,7 +42,7 @@ public class VehiclePhysics : MonoBehaviour
         Vector3 vehicleVelocity = transform.InverseTransformDirection( rigidbody.velocity );
         engineComponent.EngineFixedUpdate( vehicleVelocity );
         wheelComponent.WheelFixedUpdate( vehicleVelocity );
-        UpdateVehicleDrag( vehicleVelocity );
+        //UpdateVehicleDrag( vehicleVelocity );
     }
 
     private void UpdateVehicleDrag ( Vector3 vehicleVelocity )

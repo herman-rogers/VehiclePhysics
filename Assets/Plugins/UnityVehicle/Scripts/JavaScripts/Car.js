@@ -574,7 +574,7 @@ function Convert_Miles_Per_Hour_To_Meters_Per_Second(value : float) : float
 }
 
 function Convert_Meters_Per_Second_To_Miles_Per_Hour(value : float) : float
-{
+{ 
 	return value * 2.23693629;	
 }
 
