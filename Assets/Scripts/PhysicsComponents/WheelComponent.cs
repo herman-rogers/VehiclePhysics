@@ -39,7 +39,8 @@ public struct VehicleWheel
 public class WheelComponent
 {
     public VehicleWheel[ ] vehicleWheels { get; private set; }
-	public float getDistanceBetweenAxles{ get; private set; }
+    public float getDistanceBetweenAxles { get; private set; }
+    public float getDistanceBetweenRearWheels { get; private set; }
     public static WheelsOnGround wheelsGrounded;
     private WheelFrictionCurve wheelFriction;
     private WheelCollider[ ] vehicleColliders;
@@ -57,10 +58,11 @@ public class WheelComponent
         SetupWheelObjects( );
         WheelSuspension( );
         WheelFrictionCurve( );
-		CalculateDistanceBetweenAxles( );
+        CalculateDistanceBetweenAxles( );
+        CalculateDistanceBetweenRearWheels( );
     }
 
-	//Wheels in the VehicleWheel array are set up as frontwheels = 0,1. rearwheels = 2,3
+    //Wheels in the VehicleWheel array are set up as frontwheels = 0,1. rearwheels = 2,3
     private void SetupWheelObjects ( )
     {
         VehicleWheel frontRightWheel = new VehicleWheel( vehicleColliders[ 0 ],
@@ -91,12 +93,21 @@ public class WheelComponent
         RearWheelsGrounded( );
     }
 
-	private void CalculateDistanceBetweenAxles()
-	{
-		Vector3 rearAxlePosition = vehicleWheels [0].mainWheelCollider.transform.position;
-		Vector3 frontAxlePosition = vehicleWheels [2].mainWheelCollider.transform.position;
-		getDistanceBetweenAxles = Vector3.Distance( frontAxlePosition, rearAxlePosition );
-	}
+    //Used to calculate the steering angle
+    private void CalculateDistanceBetweenAxles ( )
+    {
+        Vector3 frontAxlePosition = vehicleWheels[ 0 ].mainWheelCollider.transform.position;
+        Vector3 rearAxlePosition = vehicleWheels[ 2 ].mainWheelCollider.transform.position;
+        getDistanceBetweenAxles = Vector3.Distance( frontAxlePosition, rearAxlePosition );
+    }
+
+    //Used to calculate that angle theta to find the steering angle ( 90 - theta )
+    private void CalculateDistanceBetweenRearWheels ( )
+    {
+        Vector3 rearRightWheel = vehicleWheels[ 2 ].mainWheelCollider.transform.position;
+        Vector3 rearLeftWheel = vehicleWheels[ 3 ].mainWheelCollider.transform.position;
+        getDistanceBetweenRearWheels = Vector3.Distance( rearRightWheel, rearLeftWheel );
+    }
 
     private void UpdateWheelGraphics ( Vector3 velocity )
     {
@@ -109,33 +120,90 @@ public class WheelComponent
                 Vector3 localWheelVelocity = currentWheel.visualWheel.parent.InverseTransformDirection( wheelVelocity );
                 if ( currentWheel.wheelFrontRear == WheelPosition.FRONT_WHEEL )
                 {
-                    //Steering Rotation
-                    Vector3 cachedWheelRotation = currentWheel.visualWheel.parent.localEulerAngles;
-                    cachedWheelRotation.y = mainVehiclePhysics.engineComponent.SteeringSpeed( );
-                    currentWheel.visualWheel.parent.localEulerAngles = cachedWheelRotation;
-
-                    //Wheel Rotation
-                    currentWheel.visualWheel.Rotate( Vector3.right * ( localWheelVelocity.z / currentWheel.wheelRadius )
-                                               * Time.deltaTime * Mathf.Rad2Deg );
+                    SteeringRotation( currentWheel, localWheelVelocity );
                 }
                 else
                 {
-                    if ( mainVehiclePhysics.engineComponent.GetVehicleThrottle( ) > 0.0f )
-                    {
-                        float rearWheelVelocity = ( ( mainVehiclePhysics.engineComponent.GetVehicleThrottle( ) * 10 ) *
-                                                    localWheelVelocity.z );
-                        currentWheel.visualWheel.Rotate( Vector3.right * ( rearWheelVelocity / currentWheel.wheelRadius )
-                                                         * Time.deltaTime * Mathf.Rad2Deg );
-                    }
-                    else
-                    {
-                        currentWheel.visualWheel.Rotate( Vector3.right * ( localWheelVelocity.z / currentWheel.wheelRadius )
-                                   * Time.deltaTime * Mathf.Rad2Deg );
-                    }
+                    RotateRearWheels( currentWheel, localWheelVelocity );
                 }
             }
         }
     }
+
+    private void SteeringRotation ( VehicleWheel frontWheel, Vector3 frontVelocity )
+    {
+        //Rotate the wheels horizontally
+        Vector3 cachedWheelRotation = frontWheel.visualWheel.parent.localEulerAngles;
+        cachedWheelRotation.y = SteeringAngle( );
+        float test = SpeedTurnRatio( );
+        frontWheel.visualWheel.parent.localEulerAngles = cachedWheelRotation;
+        //Rotate the wheels vertically
+        frontWheel.visualWheel.Rotate( Vector3.right
+                                       * ( frontVelocity.z / frontWheel.wheelRadius )
+                                       * Time.deltaTime * Mathf.Rad2Deg );
+    }
+
+    private void RotateRearWheels ( VehicleWheel rearWheel, Vector3 rearRotation )
+    {
+        if ( mainVehiclePhysics.engineComponent.GetVehicleThrottle( ) > 0.0f )
+        {
+            float rearWheelVelocity = ( ( mainVehiclePhysics.engineComponent.GetVehicleThrottle( ) * 10 ) *
+            rearRotation.z );
+            rearWheel.visualWheel.Rotate( Vector3.right 
+                                          * ( rearWheelVelocity / rearWheel.wheelRadius )
+                                          * Time.deltaTime 
+                                          * Mathf.Rad2Deg );
+        }
+        else
+        {
+            rearWheel.visualWheel.Rotate( Vector3.right 
+                                          * ( rearRotation.z / rearWheel.wheelRadius )
+                                          * Time.deltaTime * Mathf.Rad2Deg );
+        }
+    }
+
+    private float SteeringAngle ( )
+    {
+        return mainVehiclePhysics.engineComponent.steer * 25;
+    }
+
+    private float SpeedTurnRatio ( )
+    {
+        //Low Speed Turning
+        //This is the opposite side of our triangle
+
+        Vector3 frontRightWheelRaycast = vehicleWheels[ 0 ].visualWheel.TransformDirection( 
+                                         vehicleWheels[ 0 ].visualWheel.right );
+        Vector3 frontLeftWheelRaycast = vehicleWheels[ 1 ].visualWheel.TransformDirection(
+                                       -vehicleWheels[ 1 ].visualWheel.right );
+        Debug.DrawRay( vehicleWheels[ 0 ].visualWheel.position, vehicleWheels[ 0 ].visualWheel.right * 9, Color.cyan );
+        Debug.DrawRay( vehicleWheels[ 1 ].visualWheel.position, -vehicleWheels[ 1 ].visualWheel.right * 9, Color.red );
+        Debug.DrawRay( vehicleWheels[ 2 ].visualWheel.position, vehicleWheels[ 2 ].visualWheel.right * 9, Color.magenta );
+        Debug.DrawRay( vehicleWheels[ 3 ].visualWheel.position, -vehicleWheels[ 3 ].visualWheel.right * 9, Color.blue );
+        float wheelBase = getDistanceBetweenAxles;
+
+        //This is the adjacent side of our triangle
+        float adjacentSide = getDistanceBetweenRearWheels;
+
+        //TODO: Better calculation for the circle radius
+        float deltaAngle = Mathf.Atan( wheelBase / adjacentSide );
+        float circleRadius = wheelBase / Mathf.Sin( deltaAngle );
+
+
+        float angluarVelocity = mainVehiclePhysics.engineComponent.vehicleSpeed / circleRadius;
+
+        // add in angular velocity here
+        return  angluarVelocity;
+
+        //High Speed Turning
+        //sideslip angle of the car, the angular rotation of the car around the up axis ( yaw ),
+        //and the steering angle
+
+        //cornering for per tire slipangle = corninering stiffness * slip angle
+
+        //Beta = arctan( Vy / Vx );
+    }
+
 
     private void WheelFrictionCurve ( )
     {
