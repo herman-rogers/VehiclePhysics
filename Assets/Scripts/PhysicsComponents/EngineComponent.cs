@@ -5,12 +5,11 @@ using System.Collections.Generic;
 public class EngineComponent : MonoBehaviour
 {
     public float vehicleSpeed { get; private set; }
-
     private WheelComponent wheelComponent;
     private VehiclePhysics vehiclePhysics;
     public float steer{ get; private set; }
+    public float vehicleThrottle { get; private set; }
     private float brake;
-    private float vehicleThrottle;
     private const float airDensity = 1.29f; //air density of earth
     private const float vehicleFrontalArea = 2.2f;
     private const float amountOfDragForVehicleShape = 0.30f; //the tunneltest for a corvette
@@ -47,11 +46,6 @@ public class EngineComponent : MonoBehaviour
         steer = Input.GetAxis( "Horizontal" );
         vehicleThrottle = Input.GetAxis( "Acceleration" );
         brake = Input.GetAxis( "Brake" );
-    }
-
-    public float GetVehicleThrottle ( )
-    {
-        return vehicleThrottle;
     }
 
     private void LongitudinalForces ( )
@@ -116,7 +110,7 @@ public class EngineComponent : MonoBehaviour
 
     private float CalculateTorque ( float rpms )
     {
-        //lb-ft
+        //Torque is in lb-ft
         if ( rpms == 1000 )
         {
             return 300;
@@ -165,17 +159,4 @@ public class EngineComponent : MonoBehaviour
         }
         gearRatio = engineGearRatios[ gearNumber ];
     }
-
-    //private void ApplySteering ( Vector3 velocity )
-    //{
-    //    //double turnRadius = 3.0 / Mathf.Sin( ( 90 - ( steer * 30 ) ) * Mathf.Deg2Rad );
-    //    //float minMaxTurn = SpeedTurnRatio( );
-    //    //float turnSpeed = Mathf.Clamp( velocity.z / ( float )turnRadius, -minMaxTurn / 10, minMaxTurn / 10 );
-    //    //transform.RotateAround( transform.position + transform.right * ( float )turnRadius * steer,
-    //    //                        transform.up,
-    //    //                        turnSpeed * Mathf.Rad2Deg * Time.deltaTime * steer );
-
-
-
-    //}
 }

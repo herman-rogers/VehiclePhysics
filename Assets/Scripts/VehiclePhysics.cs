@@ -29,6 +29,7 @@ public class VehiclePhysics : MonoBehaviour
         engineComponent.Start( );
         rigidbody.centerOfMass += new Vector3( 0, 0, 1.0f );
     }
+
     private void Update ( )
     {
         Vector3 vehicleVelocity = transform.InverseTransformDirection( rigidbody.velocity );
