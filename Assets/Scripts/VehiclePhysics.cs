@@ -41,9 +41,8 @@ public class VehiclePhysics : MonoBehaviour
     private void FixedUpdate ( )
     {
         Vector3 vehicleVelocity = transform.InverseTransformDirection( rigidbody.velocity );
-        engineComponent.EngineFixedUpdate( vehicleVelocity );
+        engineComponent.EngineFixedUpdate( );
         wheelComponent.WheelFixedUpdate( vehicleVelocity );
-        //UpdateVehicleDrag( vehicleVelocity );
     }
 
     private void UpdateVehicleDrag ( Vector3 vehicleVelocity )

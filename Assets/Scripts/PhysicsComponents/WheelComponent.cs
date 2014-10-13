@@ -1,92 +1,31 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public enum WheelsOnGround
-{
-    WHEEL_ON_GROUND, //individual wheel on ground
-    WHEEL_IN_AIR, //individual wheel in air
-}
-
-public enum WheelPosition
-{
-    FRONT_WHEEL,
-    REAR_WHEEL,
-    LEFT_WHEEL,
-    RIGHT_WHEEL,
-}
-
-public struct VehicleWheel
-{
-    public WheelPosition wheelFrontRear;
-    public WheelPosition wheelLeftRight;
-    public WheelsOnGround currenWheelOnGround;
-    public WheelHit wheelGroundContactPoint;
-    public WheelCollider mainWheelCollider;
-    public WheelComponent wheelPhysics;
-    public Transform visualWheel;
-    public float wheelRadius;
-
-    public VehicleWheel ( WheelCollider vehicleWheel,
-                          WheelComponent wheelComponent,
-                          WheelPosition frontRear,
-                          WheelPosition leftRight )
-    {
-        wheelFrontRear = frontRear;
-        wheelLeftRight = leftRight;
-        currenWheelOnGround = WheelsOnGround.WHEEL_ON_GROUND;
-        mainWheelCollider = vehicleWheel;
-        wheelPhysics = wheelComponent;
-        visualWheel = vehicleWheel.GetComponentInChildren<MeshRenderer>( ).transform;
-        wheelRadius = ( visualWheel.renderer.bounds.size.y / 2 );
-        mainWheelCollider.radius = wheelRadius;
-        mainWheelCollider.GetGroundHit( out wheelGroundContactPoint );
-    }
-
-    public void UpdateWheel( )
-    {
-        if( mainWheelCollider.GetGroundHit( out wheelGroundContactPoint ) )
-        {
-            currenWheelOnGround = WheelsOnGround.WHEEL_ON_GROUND;
-            UpdateWheelGraphic( );
-            return;
-        }
-        currenWheelOnGround = WheelsOnGround.WHEEL_IN_AIR;
-    }
-
-    private void UpdateWheelGraphic ( )
-    {
-        Vector3 wheelVelocity = wheelPhysics.mainVehiclePhysics.rigidbody.GetPointVelocity( wheelGroundContactPoint.point );
-        Vector3 localWheelVelocity = visualWheel.parent.InverseTransformDirection( wheelVelocity );
-        if ( wheelFrontRear == WheelPosition.FRONT_WHEEL )
-        {
-            wheelPhysics.SteeringRotation( this, localWheelVelocity );
-            return;
-        }
-        wheelPhysics.RotateDrivingWheel( this, localWheelVelocity );
-    }
-}
-
 public class WheelComponent
 {
-    public VehicleWheel[ ] vehicleWheels { get; private set; }
-    public float distanceBetweenAxles { get; private set; }
-    public float getDistanceBetweenRearWheels { get; private set; }
-    public static WheelsOnGround wheelsGrounded;
     public VehiclePhysics mainVehiclePhysics;
+    public VehicleWheel[ ] vehicleWheels { get; private set; }
+    public float getDistanceBetweenRearWheels { get; private set; }
+    public float wheelBase { get; private set; }
     private WheelFrictionCurve wheelFriction;
     private WheelCollider[ ] vehicleColliders;
-    private float stabilizierForce = 5000.0f;
-    private float suspensionRange = 0.1f;
-    private float suspensionDamper = 50.0f;
-    private float suspensionSpringFront = 18500.0f;
-    private float suspensionSpringRear = 9000.0f;
-    private const float earthGravitationalConstant = 9.8f;
+    private float wheelAngleDegrees;
     private const int i_frontRightWheel = 0;
     private const int i_frontLeftWheel = 1;
     private const int i_rearRightWheel = 2;
     private const int i_rearLeftWheel = 3;
+    //Wheel weight distribution constants
+    private const float earthGravitationalConstant = 9.8f;
+    private const float stabilizierForce = 5000.0f;
+    //Wheel Suspension Constants
+    private const float suspensionRange = 0.1f;
+    private const float suspensionDamper = 50.0f;
+    private const float suspensionSpringFront = 18500.0f;
+    private const float suspensionSpringRear = 9000.0f;
+    //Wheel Steering Constants
+    private const float maxSteeringAngle = 25.0f;
 
-    public WheelComponent ( GameObject vehiclePhysics )
+    public WheelComponent( GameObject vehiclePhysics )
     {
         mainVehiclePhysics = vehiclePhysics.GetComponent<VehiclePhysics>( );
         vehicleColliders = mainVehiclePhysics.vehicleWheels;
@@ -98,7 +37,7 @@ public class WheelComponent
     }
 
     //Wheels in the VehicleWheel array are set up as frontwheels = 0,1. rearwheels = 2,3
-    private void SetupWheelObjects ( )
+    private void SetupWheelObjects( )
     {
         VehicleWheel frontRightWheel = new VehicleWheel( vehicleColliders[ i_frontRightWheel ],
                                                          this,
@@ -119,18 +58,19 @@ public class WheelComponent
         vehicleWheels = new VehicleWheel[ ] { frontRightWheel, frontLeftWheel, rearRightWheel, rearLeftWheel };
     }
 
-    public void WheelUpdate ( Vector3 velocity )
+    public void WheelUpdate( Vector3 velocity )
     {
     }
 
-    public void WheelFixedUpdate ( Vector3 velocity )
+    public void WheelFixedUpdate( Vector3 velocity )
     {
         WheelFriction( velocity );
         WheelWeightDistribution( );
+        SpeedTurnRatio( );
         UpdateVehicleWheels( );
     }
 
-    private void UpdateVehicleWheels ( )
+    private void UpdateVehicleWheels( )
     {
         vehicleWheels[ i_frontRightWheel ].UpdateWheel( );
         vehicleWheels[ i_frontLeftWheel ].UpdateWheel( );
@@ -138,98 +78,23 @@ public class WheelComponent
         vehicleWheels[ i_rearLeftWheel ].UpdateWheel( );
     }
 
-    //Used to calculate the steering angle
-    private void CalculateDistanceBetweenAxles ( )
+    //Used to calculate the wheel base = ( distance between axles )
+    private void CalculateDistanceBetweenAxles( )
     {
         Vector3 frontAxlePosition = vehicleWheels[ i_frontRightWheel ].mainWheelCollider.transform.position;
         Vector3 rearAxlePosition = vehicleWheels[ i_frontLeftWheel ].mainWheelCollider.transform.position;
-        distanceBetweenAxles = Vector3.Distance( frontAxlePosition, rearAxlePosition );
+        wheelBase = Vector3.Distance( frontAxlePosition, rearAxlePosition );
     }
 
     //Used to calculate that angle theta to find the steering angle ( 90 - theta )
-    private void CalculateDistanceBetweenRearWheels ( )
+    private void CalculateDistanceBetweenRearWheels( )
     {
         Vector3 rearRightWheel = vehicleWheels[ i_rearRightWheel ].mainWheelCollider.transform.position;
         Vector3 rearLeftWheel = vehicleWheels[ i_rearLeftWheel ].mainWheelCollider.transform.position;
         getDistanceBetweenRearWheels = Vector3.Distance( rearRightWheel, rearLeftWheel );
     }
 
-    public void SteeringRotation ( VehicleWheel frontWheel, Vector3 frontVelocity )
-    {
-        //Rotate the wheels horizontally
-        Vector3 cachedWheelRotation = frontWheel.visualWheel.parent.localEulerAngles;
-        cachedWheelRotation.y = SteeringAngle( );
-        //float test = SpeedTurnRatio( );
-        frontWheel.visualWheel.parent.localEulerAngles = cachedWheelRotation;
-        //Rotate the wheels vertically
-        frontWheel.visualWheel.Rotate( Vector3.right
-                                       * ( frontVelocity.z / frontWheel.wheelRadius )
-                                       * Time.deltaTime * Mathf.Rad2Deg );
-    }
-
-    public void RotateDrivingWheel ( VehicleWheel rearWheel, Vector3 rearRotation )
-    {
-        if ( mainVehiclePhysics.engineComponent.vehicleThrottle > 0.0f )
-        {
-            float rearWheelVelocity = ( ( mainVehiclePhysics.engineComponent.vehicleThrottle * 10 ) *
-            rearRotation.z );
-            rearWheel.visualWheel.Rotate( Vector3.right
-                                          * ( rearWheelVelocity / rearWheel.wheelRadius )
-                                          * Time.deltaTime
-                                          * Mathf.Rad2Deg );
-        }
-        else
-        {
-            rearWheel.visualWheel.Rotate( Vector3.right
-                                          * ( rearRotation.z / rearWheel.wheelRadius )
-                                          * Time.deltaTime * Mathf.Rad2Deg );
-        }
-    }
-
-    private float SteeringAngle ( )
-    {
-        return mainVehiclePhysics.engineComponent.steer * 25;
-    }
-
-    private float SpeedTurnRatio ( )
-    {
-        //Low Speed Turning
-        //This is the opposite side of our triangle
-
-        Vector3 frontRightWheelRaycast = vehicleWheels[ i_frontRightWheel ].visualWheel.TransformDirection(
-                                         vehicleWheels[ i_frontRightWheel ].visualWheel.right );
-        Vector3 frontLeftWheelRaycast = vehicleWheels[ i_frontLeftWheel ].visualWheel.TransformDirection(
-                                       -vehicleWheels[ i_frontLeftWheel ].visualWheel.right );
-        Debug.DrawRay( vehicleWheels[ 0 ].visualWheel.position, vehicleWheels[ 0 ].visualWheel.right * 9, Color.cyan );
-        Debug.DrawRay( vehicleWheels[ 1 ].visualWheel.position, -vehicleWheels[ 1 ].visualWheel.right * 9, Color.red );
-        Debug.DrawRay( vehicleWheels[ 2 ].visualWheel.position, vehicleWheels[ 2 ].visualWheel.right * 9, Color.magenta );
-        Debug.DrawRay( vehicleWheels[ 3 ].visualWheel.position, -vehicleWheels[ 3 ].visualWheel.right * 9, Color.blue );
-        float wheelBase = distanceBetweenAxles;
-
-        //This is the adjacent side of our triangle
-        float adjacentSide = getDistanceBetweenRearWheels;
-
-        //TODO: Better calculation for the circle radius
-        float deltaAngle = Mathf.Atan( wheelBase / adjacentSide );
-        float circleRadius = wheelBase / Mathf.Sin( deltaAngle );
-
-
-        float angluarVelocity = mainVehiclePhysics.engineComponent.vehicleSpeed / circleRadius;
-
-        // add in angular velocity here
-        return angluarVelocity;
-
-        //High Speed Turning
-        //sideslip angle of the car, the angular rotation of the car around the up axis ( yaw ),
-        //and the steering angle
-
-        //cornering for per tire slipangle = corninering stiffness * slip angle
-
-        //Beta = arctan( Vy / Vx );
-    }
-
-
-    private void WheelFrictionCurve ( )
+    private void WheelFrictionCurve( )
     {
         wheelFriction = new WheelFrictionCurve( );
         wheelFriction.extremumSlip = 1;
@@ -239,7 +104,7 @@ public class WheelComponent
         wheelFriction.stiffness = 1;
     }
 
-    private void WheelSuspension ( )
+    private void WheelSuspension( )
     {
         foreach ( VehicleWheel wheel in vehicleWheels )
         {
@@ -259,7 +124,7 @@ public class WheelComponent
         }
     }
 
-    private void WheelFriction ( Vector3 velocity )
+    private void WheelFriction( Vector3 velocity )
     {
         float squareVelocity = velocity.x * velocity.x;
         wheelFriction.extremumValue = Mathf.Clamp( 300 - squareVelocity, 0, 300 );
@@ -271,108 +136,54 @@ public class WheelComponent
         }
     }
 
-    private void WheelWeightDistribution ( )
+    /*Vehicle Steering Calculations*/
+    public float SteeringAngle( )
     {
-        float travelLeft = 1.0f;
-        float travelRight = 1.0f;
-        float frontWheelWeight = 0.0f;
-        float rearWheelWeight = 0.0f;
-        bool frontRightWheelGrounded = vehicleWheels[ i_frontRightWheel ].currenWheelOnGround == WheelsOnGround.WHEEL_ON_GROUND;
-        bool frontLeftWheelGrounded = vehicleWheels[ i_frontLeftWheel ].currenWheelOnGround == WheelsOnGround.WHEEL_ON_GROUND;
-        bool rearRightWheelGrounded = vehicleWheels[ i_rearRightWheel ].currenWheelOnGround == WheelsOnGround.WHEEL_ON_GROUND;
-        bool rearLeftWheelGrounded = vehicleWheels[ i_rearLeftWheel ].currenWheelOnGround == WheelsOnGround.WHEEL_ON_GROUND;
-        CalculateLongitudinalWeight( out frontWheelWeight, out rearWheelWeight );
-
-        if ( frontLeftWheelGrounded )
-        {
-            travelLeft = CalculateWheelStabilization( i_frontLeftWheel );
-        }
-        if ( frontRightWheelGrounded )
-        {
-            travelRight = CalculateWheelStabilization( i_frontRightWheel );
-        }
-
-        float antiRollForce = ( travelLeft - travelRight ) * stabilizierForce;
-
-        if ( frontLeftWheelGrounded )
-        {
-            mainVehiclePhysics.rigidbody.AddForceAtPosition( vehicleWheels[ i_frontLeftWheel ].mainWheelCollider.transform.up * frontWheelWeight,
-                                                             vehicleWheels[ i_frontLeftWheel ].mainWheelCollider.transform.position );
-            mainVehiclePhysics.rigidbody.AddForceAtPosition( vehicleWheels[ i_frontLeftWheel ].mainWheelCollider.transform.up
-                                                             * antiRollForce,
-                                                             vehicleWheels[ i_frontRightWheel ].mainWheelCollider.transform.position );
-        }
-        if ( frontRightWheelGrounded )
-        {
-            mainVehiclePhysics.rigidbody.AddForceAtPosition( vehicleWheels[ i_frontRightWheel ].mainWheelCollider.transform.up * frontWheelWeight,
-                                                             vehicleWheels[ i_frontRightWheel ].mainWheelCollider.transform.position );
-            mainVehiclePhysics.rigidbody.AddForceAtPosition( vehicleWheels[ i_frontRightWheel ].mainWheelCollider.transform.up
-                                                             * antiRollForce,
-                                                             vehicleWheels[ i_frontRightWheel ].mainWheelCollider.transform.position );
-        }
-
-        //Rear Wheel Calculations
-        if ( rearLeftWheelGrounded )
-        {
-            travelLeft = CalculateWheelStabilization( i_rearLeftWheel );
-        }
-        if ( rearRightWheelGrounded )
-        {
-            travelRight = CalculateWheelStabilization( i_rearRightWheel );
-        }
-
-        antiRollForce = ( travelLeft - travelRight ) * stabilizierForce;
-
-        if ( rearLeftWheelGrounded )
-        {
-            mainVehiclePhysics.rigidbody.AddForceAtPosition( Vector3.down * rearWheelWeight,
-                                                             vehicleWheels[ i_rearLeftWheel ].mainWheelCollider.transform.position );
-
-            mainVehiclePhysics.rigidbody.AddForceAtPosition( vehicleWheels[ i_rearLeftWheel ].mainWheelCollider.transform.up
-                                                             * antiRollForce,
-                                                             vehicleWheels[ i_rearLeftWheel ].mainWheelCollider.transform.position );
-        }
-        if ( rearRightWheelGrounded )
-        {
-            //frontal physics
-            mainVehiclePhysics.rigidbody.AddForceAtPosition( Vector3.down * rearWheelWeight,
-                                                             vehicleWheels[ i_rearRightWheel ].mainWheelCollider.transform.position );
-            //anti roll force
-            mainVehiclePhysics.rigidbody.AddForceAtPosition( vehicleWheels[ i_rearRightWheel ].mainWheelCollider.transform.up
-                                                             * antiRollForce,
-                                                             vehicleWheels[ i_rearRightWheel ].mainWheelCollider.transform.position );
-        }
+        return mainVehiclePhysics.engineComponent.steer * wheelAngleDegrees;
     }
 
-    private float CalculateWheelStabilization ( int wheel )
+    private void SpeedTurnRatio( )
     {
-        return ( ( -vehicleWheels[ wheel ].mainWheelCollider.transform.InverseTransformPoint( vehicleWheels[ wheel ].wheelGroundContactPoint.point ).y
-                  - vehicleWheels[ wheel ].wheelRadius ) / vehicleWheels[ wheel ].mainWheelCollider.suspensionDistance );
-    }
-
-    //This is the weight distribution along the z axis of the car.
-    //It distributes the center of gravity from the hood to the trunk ( boot ).
-    private void CalculateLongitudinalWeight ( out float frontWheelAxis, out float rearWheelAxis )
-    {
-        //weight distributed between front and rear axles
         float vehicleMass = mainVehiclePhysics.rigidbody.mass;
-        //Weight in Kilograms
         float vehicleWeight = vehicleMass * earthGravitationalConstant;
-        Vector3 centerOfGravityPosition = mainVehiclePhysics.rigidbody.worldCenterOfMass;
-        float centerGravityDistanceToFrontAxle = Vector3.Distance( centerOfGravityPosition, vehicleWheels[ 0 ].visualWheel.position );
-        float centerGravityDistanceToRearAxle = Vector3.Distance( centerOfGravityPosition, vehicleWheels[ 2 ].visualWheel.position );
-        float frictionCoefficient = 1.0f;
-        float wheelBase = distanceBetweenAxles;
-        float wheelFrictionLimit = frictionCoefficient * vehicleWeight;
+        float vehicleVelocity = mainVehiclePhysics.engineComponent.vehicleSpeed;
+        //Low Speed Turning
+        //Wheel Turning Radius "R" from Meters to Feet ( 3.28 )
+        float turningRadius = ( wheelBase / Mathf.Cos( maxSteeringAngle ) * 3.28f );
+        float wheelAngle = Mathf.Acos( wheelBase / turningRadius );
+        wheelAngleDegrees = 57.29f / wheelAngle;
+        float lowSpeedTurn =  ( vehicleVelocity / ( 2 * 3.14f * turningRadius ) );
+        //High Speed Turning
+        float velocitySquared = vehicleVelocity * vehicleVelocity;
+        //0.7 is the fiction of rubber
+        float centripedalForce = ( vehicleMass * velocitySquared / turningRadius );
+        float coefficientOfFriction = ( ( 0.7f * ( wheelBase / turningRadius ) 
+                                        * velocitySquared ) / wheelBase ) * vehicleWeight;
+        float driftForce = centripedalForce / coefficientOfFriction;
 
-        frontWheelAxis = ( centerGravityDistanceToFrontAxle / wheelBase ) * vehicleWeight
-                             - ( ( centerOfGravityPosition.y / wheelBase ) *
-                             vehicleMass * mainVehiclePhysics.engineComponent.vehicleThrottle );
 
-        rearWheelAxis = ( centerGravityDistanceToRearAxle / wheelBase ) * vehicleWeight
-                            + ( ( centerOfGravityPosition.y / wheelBase ) *
-                            vehicleMass * mainVehiclePhysics.engineComponent.vehicleThrottle );
+        //Applying steering to the vehicle turning
+        Vector3 angularVelocity = new Vector3( 0, lowSpeedTurn, 0 );
+        Quaternion deltaAngularRotation = Quaternion.Euler( angularVelocity * Time.deltaTime );
+        //Low speed calculations
+        mainVehiclePhysics.rigidbody.MoveRotation( mainVehiclePhysics.rigidbody.rotation 
+                                                   * deltaAngularRotation );
+        //mainVehiclePhysics.rigidbody.AddForceAtPosition( vehicleWheels[ i_rearLeftWheel ].visualWheel.transform.right
+        //                                                  * driftForce,
+        //                                                  vehicleWheels[ i_rearLeftWheel ].visualWheel.position );
+
+        // add in angular velocity here
+        //return angluarVelocity;
+
+        //High Speed Turning
+        //sideslip angle of the car, the angular rotation of the car around the up axis ( yaw ),
+        //and the steering angle
+
+        //cornering for per tire slipangle = corninering stiffness * slip angle
+
+        //Beta = arctan( Vy / Vx );
     }
+
 
     //private void ApplySteering ( Vector3 velocity )
     //{
@@ -384,4 +195,88 @@ public class WheelComponent
     //    //                        turnSpeed * Mathf.Rad2Deg * Time.deltaTime * steer );
     //}
 
+    /*Vehicle Weight Calculations*/
+    private void WheelWeightDistribution( )
+    {
+        //Front Wheel Calculations
+        CalculateWeightDistribution( i_frontLeftWheel,
+                                     i_frontRightWheel,
+                                     vehicleWheels[ i_frontLeftWheel ].mainWheelCollider.transform.up,
+                                     vehicleWheels[ i_frontRightWheel ].mainWheelCollider.transform.up );
+        //Rear Wheel Calculations
+        CalculateWeightDistribution( i_rearLeftWheel,
+                                     i_rearRightWheel,
+                                     Vector3.down,
+                                     Vector3.down );
+    }
+
+    private void CalculateWeightDistribution( int leftWheel, int rightWheel, Vector3 leftWheelForcePosition, Vector3 rightWheelForcePosition )
+    {
+        float travelLeft = 1.0f;
+        float travelRight = 1.0f;
+        float antiRollForce = 0.0f;
+        travelLeft = CalculateLatitudinalWeight( leftWheel );
+        travelRight = CalculateLatitudinalWeight( rightWheel );
+        antiRollForce = ( travelLeft - travelRight ) * stabilizierForce;
+        ApplyWheelWeight( leftWheel, antiRollForce, leftWheelForcePosition );
+        ApplyWheelWeight( rightWheel, antiRollForce, rightWheelForcePosition );
+    }
+
+    //This is the weight distribution along the x axis of the car
+    //It distributes the center of gravity from the right axis to the left
+    //TODO: Improve Latitudinal Weight forces
+    private float CalculateLatitudinalWeight( int wheel )
+    {
+        if ( vehicleWheels[ wheel ].isWheelOnGround != WheelsOnGround.WHEEL_ON_GROUND )
+        {
+            return 0.0f;
+        }
+        return ( ( -vehicleWheels[ wheel ].mainWheelCollider.transform.InverseTransformPoint( vehicleWheels[ wheel ].wheelGroundContactPoint.point ).y
+                   - vehicleWheels[ wheel ].wheelRadius ) / vehicleWheels[ wheel ].mainWheelCollider.suspensionDistance );
+    }
+
+    private void ApplyWheelWeight( int wheel, float rollForce, Vector3 applyDirection )
+    {
+        float currentWheelWeightDistribution = 0.0f;
+        CalculateLongitudinalWeight( wheel, out currentWheelWeightDistribution );
+        if ( vehicleWheels[ wheel ].isWheelOnGround != WheelsOnGround.WHEEL_ON_GROUND )
+        {
+            return;
+        }
+        //Vehicle weight position shift based on center of gravity
+        mainVehiclePhysics.rigidbody.AddForceAtPosition( applyDirection * currentWheelWeightDistribution,
+                                                         vehicleWheels[ wheel ].mainWheelCollider.transform.position );
+        //anti-roll force
+        mainVehiclePhysics.rigidbody.AddForceAtPosition( vehicleWheels[ wheel ].mainWheelCollider.transform.up
+                                                         * rollForce,
+                                                         vehicleWheels[ wheel ].mainWheelCollider.transform.position );
+    }
+
+    //This is the weight distribution along the z axis of the car.
+    //It distributes the center of gravity from the hood to the trunk ( boot ).
+    private void CalculateLongitudinalWeight( int currentWheel, out float currentWheelAxis )
+    {
+        //weight distributed between front and rear axles
+        float vehicleMass = mainVehiclePhysics.rigidbody.mass;
+        //Weight in Kilograms
+        float vehicleWeight = vehicleMass * earthGravitationalConstant;
+        Vector3 centerOfGravityPosition = mainVehiclePhysics.rigidbody.worldCenterOfMass;
+        float centerGravityDistanceToFrontAxle = Vector3.Distance( centerOfGravityPosition, vehicleWheels[ 0 ].visualWheel.position );
+        float centerGravityDistanceToRearAxle = Vector3.Distance( centerOfGravityPosition, vehicleWheels[ 2 ].visualWheel.position );
+
+        //TODO: Improve and use the friction coefficient
+        float frictionCoefficient = 1.0f;
+        float wheelFrictionLimit = frictionCoefficient * vehicleWeight;
+
+        if( vehicleWheels[ currentWheel ].wheelFrontRear == WheelPosition.FRONT_WHEEL )
+        {
+            currentWheelAxis = ( centerGravityDistanceToFrontAxle / wheelBase ) * vehicleWeight
+                                 - ( ( centerOfGravityPosition.y / wheelBase ) *
+                                 vehicleMass * mainVehiclePhysics.engineComponent.vehicleThrottle );
+            return;
+        }
+        currentWheelAxis = ( centerGravityDistanceToRearAxle / wheelBase ) * vehicleWeight
+                             + ( ( centerOfGravityPosition.y / wheelBase ) *
+                             vehicleMass * mainVehiclePhysics.engineComponent.vehicleThrottle );
+    }
 }

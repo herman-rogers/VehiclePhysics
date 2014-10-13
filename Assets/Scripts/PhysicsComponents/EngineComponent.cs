@@ -34,7 +34,7 @@ public class EngineComponent : MonoBehaviour
         UpdateInput( );
     }
 
-    public void EngineFixedUpdate ( Vector3 vehicleVelocity )
+    public void EngineFixedUpdate ( )
     {
         LongitudinalForces( );
         AutomaticGearShift( );
