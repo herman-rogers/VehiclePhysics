@@ -5,10 +5,13 @@ using System.Collections.Generic;
 public class EngineComponent : MonoBehaviour
 {
     public float vehicleSpeed { get; private set; }
-    private WheelComponent wheelComponent;
-    private VehiclePhysics vehiclePhysics;
     public float steer{ get; private set; }
     public float vehicleThrottle { get; private set; }
+    public float wheelAngularVelocity { get; private set; }
+
+
+    private WheelComponent wheelComponent;
+    private VehiclePhysics vehiclePhysics;
     private float brake;
     private const float airDensity = 1.29f; //air density of earth
     private const float vehicleFrontalArea = 2.2f;
@@ -68,8 +71,6 @@ public class EngineComponent : MonoBehaviour
         float brakeTorque = engineBrake * gearRatio * differentialRatio * transmissionEfficiency;
         float brakeForce = ( brakeTorque / wheelComponent.vehicleWheels[ 0 ].wheelRadius );
 
-        float acceleration = forceDrive / rigidbody.mass; //!!NOT USED
-
         //**COMPLETE
         //Vehicle Resistance Coefficients
         float coefficientDrag = airFrictionDrag * amountOfDragForVehicleShape 
@@ -84,8 +85,7 @@ public class EngineComponent : MonoBehaviour
         //Brake Total Force
         float totalBrakeForce = brakeForce - forwardsDrag - forwardsRollingResistance;
         //**END COMPLETE
-        //Debug.Log( "RPMs: " + currentEngineRPM
-        //           + "  Speed: " + vehicleSpeed );
+
         if ( brake > 0.0f && vehicleSpeed <= 15.0f )
         {
             rigidbody.AddForce( transform.forward * Time.deltaTime * ( totalBrakeForce ), ForceMode.Acceleration );
@@ -99,8 +99,9 @@ public class EngineComponent : MonoBehaviour
     private float CalculateEngineRPM ( )
     {
         float vehicleSpeedMetersPerSecond = ( vehicleSpeed * 1000 ) / 3600;
-        float wheelRotation = vehicleSpeedMetersPerSecond / wheelComponent.vehicleWheels[ 0 ].wheelRadius;
-        float rpm =  ( ( wheelRotation * gearRatio * differentialRatio * 60 ) / ( 2 * pi ) );
+        //Speed wheel is rotating at a given speed( in Radians/per second )
+        wheelAngularVelocity = vehicleSpeedMetersPerSecond / wheelComponent.vehicleWheels[ 0 ].wheelRadius;
+        float rpm =  ( ( wheelAngularVelocity * gearRatio * differentialRatio * 60 ) / ( 2 * pi ) );
         if( rpm < 1000 )
         {
             return 1000; 

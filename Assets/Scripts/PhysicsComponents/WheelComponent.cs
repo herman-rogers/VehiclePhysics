@@ -152,7 +152,7 @@ public class WheelComponent
         float turningRadius = ( wheelBase / Mathf.Cos( maxSteeringAngle ) * 3.28f );
         float wheelAngle = Mathf.Acos( wheelBase / turningRadius );
         wheelAngleDegrees = 57.29f / wheelAngle;
-        float lowSpeedTurn =  ( vehicleVelocity / ( 2 * 3.14f * turningRadius ) );
+        float angularVelocity =  ( vehicleVelocity / ( 2 * 3.14f * turningRadius ) );
         //High Speed Turning
         float velocitySquared = vehicleVelocity * vehicleVelocity;
         //0.7 is the fiction of rubber
@@ -161,10 +161,15 @@ public class WheelComponent
                                         * velocitySquared ) / wheelBase ) * vehicleWeight;
         float driftForce = centripedalForce / coefficientOfFriction;
 
+        float slipRatio = ( mainVehiclePhysics.engineComponent.wheelAngularVelocity
+                            * vehicleWheels[ i_rearLeftWheel ].wheelRadius
+                            - vehicleVelocity ) / Mathf.Abs( vehicleVelocity ) ;
+
+        Debug.Log( slipRatio );
 
         //Applying steering to the vehicle turning
-        Vector3 angularVelocity = new Vector3( 0, lowSpeedTurn, 0 );
-        Quaternion deltaAngularRotation = Quaternion.Euler( angularVelocity * Time.deltaTime );
+        Vector3 angularVelocityVector = new Vector3( 0, angularVelocity, 0 );
+        Quaternion deltaAngularRotation = Quaternion.Euler( angularVelocityVector * Time.deltaTime );
         //Low speed calculations
         mainVehiclePhysics.rigidbody.MoveRotation( mainVehiclePhysics.rigidbody.rotation 
                                                    * deltaAngularRotation );
