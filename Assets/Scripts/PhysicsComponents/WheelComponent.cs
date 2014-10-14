@@ -24,6 +24,10 @@ public class WheelComponent
     private const float suspensionSpringRear = 9000.0f;
     //Wheel Steering Constants
     private const float maxSteeringAngle = 25.0f;
+    //The traction constant is the slope
+    //based off of coordinates x1, y1 ( -10, -6000 )
+    //And x2, y2 ( 10, 6000 ). These values form a generic slip ratio curve
+    private const int tractionConstant = 600;
 
     public WheelComponent( GameObject vehiclePhysics )
     {
@@ -94,16 +98,6 @@ public class WheelComponent
         getDistanceBetweenRearWheels = Vector3.Distance( rearRightWheel, rearLeftWheel );
     }
 
-    private void WheelFrictionCurve( )
-    {
-        wheelFriction = new WheelFrictionCurve( );
-        wheelFriction.extremumSlip = 1;
-        wheelFriction.extremumValue = 50;
-        wheelFriction.asymptoteSlip = 2;
-        wheelFriction.asymptoteValue = 25;
-        wheelFriction.stiffness = 1;
-    }
-
     private void WheelSuspension( )
     {
         foreach ( VehicleWheel wheel in vehicleWheels )
@@ -124,11 +118,24 @@ public class WheelComponent
         }
     }
 
+    /*******************Wheel Friction*******************/
+    private void WheelFrictionCurve ( )
+    {
+        wheelFriction = new WheelFrictionCurve( );
+        wheelFriction.extremumSlip = 1;
+        wheelFriction.extremumValue = 50;
+        wheelFriction.asymptoteSlip = 2;
+        wheelFriction.asymptoteValue = 25;
+        wheelFriction.stiffness = 1;
+    }
+
     private void WheelFriction( Vector3 velocity )
     {
-        float squareVelocity = velocity.x * velocity.x;
-        wheelFriction.extremumValue = Mathf.Clamp( 300 - squareVelocity, 0, 300 );
-        wheelFriction.asymptoteValue = Mathf.Clamp( 150 - ( squareVelocity / 2 ), 0, 150 );
+        //float squareVelocity = velocity.x * velocity.x;
+        //wheelFriction.extremumValue = Mathf.Clamp( 300 - squareVelocity, 0, 300 );
+        //wheelFriction.asymptoteValue = Mathf.Clamp( 150 - ( squareVelocity / 2 ), 0, 150 );
+        
+        
         foreach ( WheelCollider wheel in vehicleColliders )
         {
             wheel.sidewaysFriction = wheelFriction;
@@ -136,7 +143,21 @@ public class WheelComponent
         }
     }
 
-    /*Vehicle Steering Calculations*/
+    public float CalculateWheelSlip ( )
+    {
+        float wheelSlip = 0.0f;
+        Vector3 vehicleVelocity = mainVehiclePhysics.rigidbody.velocity;
+        float slipRatio = ( mainVehiclePhysics.engineComponent.wheelAngularVelocity
+                            * vehicleWheels[ i_rearLeftWheel ].wheelRadius
+                            * -vehicleVelocity.magnitude ) / vehicleVelocity.magnitude;
+        wheelSlip = tractionConstant
+                    * slipRatio
+                    * mainVehiclePhysics.engineComponent.vehicleThrottle;
+        wheelFriction.asymptoteSlip = wheelSlip;
+        return wheelSlip;
+    }
+
+    /*******************Vehicle Steering Calculations*******************/
     public float SteeringAngle( )
     {
         return mainVehiclePhysics.engineComponent.steer * wheelAngleDegrees;
@@ -155,38 +176,18 @@ public class WheelComponent
         float angularVelocity =  ( vehicleVelocity / ( 2 * 3.14f * turningRadius ) );
         //High Speed Turning
         float velocitySquared = vehicleVelocity * vehicleVelocity;
-        //0.7 is the fiction of rubber
+        //0.7 is the friction of rubber
         float centripedalForce = ( vehicleMass * velocitySquared / turningRadius );
         float coefficientOfFriction = ( ( 0.7f * ( wheelBase / turningRadius ) 
                                         * velocitySquared ) / wheelBase ) * vehicleWeight;
         float driftForce = centripedalForce / coefficientOfFriction;
 
-        float slipRatio = ( mainVehiclePhysics.engineComponent.wheelAngularVelocity
-                            * vehicleWheels[ i_rearLeftWheel ].wheelRadius
-                            - vehicleVelocity ) / Mathf.Abs( vehicleVelocity ) ;
-
-        Debug.Log( slipRatio );
-
         //Applying steering to the vehicle turning
         Vector3 angularVelocityVector = new Vector3( 0, angularVelocity, 0 );
         Quaternion deltaAngularRotation = Quaternion.Euler( angularVelocityVector * Time.deltaTime );
         //Low speed calculations
-        mainVehiclePhysics.rigidbody.MoveRotation( mainVehiclePhysics.rigidbody.rotation 
+        mainVehiclePhysics.rigidbody.MoveRotation( mainVehiclePhysics.rigidbody.rotation
                                                    * deltaAngularRotation );
-        //mainVehiclePhysics.rigidbody.AddForceAtPosition( vehicleWheels[ i_rearLeftWheel ].visualWheel.transform.right
-        //                                                  * driftForce,
-        //                                                  vehicleWheels[ i_rearLeftWheel ].visualWheel.position );
-
-        // add in angular velocity here
-        //return angluarVelocity;
-
-        //High Speed Turning
-        //sideslip angle of the car, the angular rotation of the car around the up axis ( yaw ),
-        //and the steering angle
-
-        //cornering for per tire slipangle = corninering stiffness * slip angle
-
-        //Beta = arctan( Vy / Vx );
     }
 
 
@@ -211,8 +212,8 @@ public class WheelComponent
         //Rear Wheel Calculations
         CalculateWeightDistribution( i_rearLeftWheel,
                                      i_rearRightWheel,
-                                     Vector3.down,
-                                     Vector3.down );
+                                     -vehicleWheels[ i_rearLeftWheel ].mainWheelCollider.transform.up,
+                                     -vehicleWheels[ i_rearRightWheel ].mainWheelCollider.transform.up );
     }
 
     private void CalculateWeightDistribution( int leftWheel, int rightWheel, Vector3 leftWheelForcePosition, Vector3 rightWheelForcePosition )

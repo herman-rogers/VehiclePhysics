@@ -7,12 +7,10 @@ public class EngineComponent : MonoBehaviour
     public float vehicleSpeed { get; private set; }
     public float steer{ get; private set; }
     public float vehicleThrottle { get; private set; }
+    public float brake { get; private set; }
     public float wheelAngularVelocity { get; private set; }
-
-
     private WheelComponent wheelComponent;
     private VehiclePhysics vehiclePhysics;
-    private float brake;
     private const float airDensity = 1.29f; //air density of earth
     private const float vehicleFrontalArea = 2.2f;
     private const float amountOfDragForVehicleShape = 0.30f; //the tunneltest for a corvette
@@ -55,13 +53,13 @@ public class EngineComponent : MonoBehaviour
     {
         //Vehicle Speed
         vehicleSpeed = rigidbody.velocity.magnitude;
+        Vector3 reverseVehicleSpeed = transform.InverseTransformDirection( rigidbody.velocity );
         //Calculating Engine Torque
         float currentEngineRPM = CalculateEngineRPM( );
         float maxTorque = CalculateTorque( currentEngineRPM );
         float engineTorque = vehicleThrottle * maxTorque;
         float engineBrake = ( -brake ) * maxTorque;
         float horsePower = ( engineTorque * currentEngineRPM ) / 5252;
-        float wheelRadius = wheelComponent.vehicleWheels[ 0 ].wheelRadius;
 
         //The Amount of torque ( force ) we recieve when converting engine torque to the rear wheels
         float driveTorque = engineTorque * gearRatio * differentialRatio * transmissionEfficiency;
@@ -80,19 +78,26 @@ public class EngineComponent : MonoBehaviour
         //Vehicle Forwards Resistance
         float forwardsDrag = -coefficientDrag * vehicleSpeed;
         float forwardsRollingResistance = -coefficientRollingResistance * vehicleSpeed;
-        float totalLongitudinalForces = forceDrive + forwardsDrag + forwardsRollingResistance;
-
-        //Brake Total Force
-        float totalBrakeForce = brakeForce - forwardsDrag - forwardsRollingResistance;
-        //**END COMPLETE
-
-        if ( brake > 0.0f && vehicleSpeed <= 15.0f )
+        float totalLongitudinalForces = forceDrive 
+                                        + forwardsDrag 
+                                        + forwardsRollingResistance
+                                        + wheelComponent.CalculateWheelSlip( );
+        float totalBrakeForce = brakeForce
+                                - forwardsDrag 
+                                - forwardsRollingResistance
+                                - wheelComponent.CalculateWheelSlip( );
+        if ( brake > 0.0f && reverseVehicleSpeed.z >= -15.0f )
         {
-            rigidbody.AddForce( transform.forward * Time.deltaTime * ( totalBrakeForce ), ForceMode.Acceleration );
+            rigidbody.AddForce( transform.forward 
+                                * Time.deltaTime 
+                                * ( totalBrakeForce ), ForceMode.Acceleration );
         }
+        //TODO: Apply to brake when brake speed is high
         if ( totalLongitudinalForces > 0.0f )
         {
-            rigidbody.AddForce( transform.forward * Time.deltaTime * ( totalLongitudinalForces ), ForceMode.Acceleration );
+            rigidbody.AddForce( transform.forward 
+                                * Time.deltaTime 
+                                * ( totalLongitudinalForces ), ForceMode.Acceleration );
         }
     }
 
