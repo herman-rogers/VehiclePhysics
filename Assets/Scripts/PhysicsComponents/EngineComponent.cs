@@ -78,14 +78,16 @@ public class EngineComponent : MonoBehaviour
         //Vehicle Forwards Resistance
         float forwardsDrag = -coefficientDrag * vehicleSpeed;
         float forwardsRollingResistance = -coefficientRollingResistance * vehicleSpeed;
-        float totalLongitudinalForces = forceDrive 
-                                        + forwardsDrag 
-                                        + forwardsRollingResistance
-                                        + wheelComponent.CalculateWheelSlip( );
+        float totalLongitudinalForces = forceDrive
+                                        + forwardsDrag
+                                        + forwardsRollingResistance;
+                               //         + wheelComponent.CalculateWheelSlip( );
         float totalBrakeForce = brakeForce
                                 - forwardsDrag 
                                 - forwardsRollingResistance
                                 - wheelComponent.CalculateWheelSlip( );
+
+        //TODO: Fix issues when reversing and moving vehicle forward -- causes multiply issues
         if ( brake > 0.0f && reverseVehicleSpeed.z >= -15.0f )
         {
             rigidbody.AddForce( transform.forward 

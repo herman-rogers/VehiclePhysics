@@ -6,6 +6,7 @@ public class VehiclePhysics : MonoBehaviour
     public WheelCollider frontLeftWheel;
     public WheelCollider rearRightWheel;
     public WheelCollider rearLeftWheel;
+    public GameObject vehicleCenterOfGravity;
     public const int numberOfGears = 6;
     public const float speedCap = 180;
     public GearsComponent gearsComponent { get; private set; }
@@ -40,9 +41,8 @@ public class VehiclePhysics : MonoBehaviour
 
     private void FixedUpdate ( )
     {
-        Vector3 vehicleVelocity = transform.InverseTransformDirection( rigidbody.velocity );
         engineComponent.EngineFixedUpdate( );
-        wheelComponent.WheelFixedUpdate( vehicleVelocity );
+        wheelComponent.WheelFixedUpdate( );
     }
 
     private void UpdateVehicleDrag ( Vector3 vehicleVelocity )

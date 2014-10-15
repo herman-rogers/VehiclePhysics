@@ -66,9 +66,9 @@ public class WheelComponent
     {
     }
 
-    public void WheelFixedUpdate( Vector3 velocity )
+    public void WheelFixedUpdate( )
     {
-        WheelFriction( velocity );
+        WheelFriction( );
         WheelWeightDistribution( );
         SpeedTurnRatio( );
         UpdateVehicleWheels( );
@@ -129,13 +129,12 @@ public class WheelComponent
         wheelFriction.stiffness = 1;
     }
 
-    private void WheelFriction( Vector3 velocity )
+    private void WheelFriction( )
     {
+        //Vector3 velocity = mainVehiclePhysics.rigidbody.velocity;
         //float squareVelocity = velocity.x * velocity.x;
         //wheelFriction.extremumValue = Mathf.Clamp( 300 - squareVelocity, 0, 300 );
         //wheelFriction.asymptoteValue = Mathf.Clamp( 150 - ( squareVelocity / 2 ), 0, 150 );
-        
-        
         foreach ( WheelCollider wheel in vehicleColliders )
         {
             wheel.sidewaysFriction = wheelFriction;
@@ -168,40 +167,44 @@ public class WheelComponent
         float vehicleMass = mainVehiclePhysics.rigidbody.mass;
         float vehicleWeight = vehicleMass * earthGravitationalConstant;
         float vehicleVelocity = mainVehiclePhysics.engineComponent.vehicleSpeed;
-        //Low Speed Turning
+        //** Low Speed Turning **//
         //Wheel Turning Radius "R" from Meters to Feet ( 3.28 )
         float turningRadius = ( wheelBase / Mathf.Cos( maxSteeringAngle ) * 3.28f );
         float wheelAngle = Mathf.Acos( wheelBase / turningRadius );
         wheelAngleDegrees = 57.29f / wheelAngle;
         float angularVelocity =  ( vehicleVelocity / ( 2 * 3.14f * turningRadius ) );
-        //High Speed Turning
-        float velocitySquared = vehicleVelocity * vehicleVelocity;
-        //0.7 is the friction of rubber
-        float centripedalForce = ( vehicleMass * velocitySquared / turningRadius );
-        float coefficientOfFriction = ( ( 0.7f * ( wheelBase / turningRadius ) 
-                                        * velocitySquared ) / wheelBase ) * vehicleWeight;
-        float driftForce = centripedalForce / coefficientOfFriction;
-
         //Applying steering to the vehicle turning
         Vector3 angularVelocityVector = new Vector3( 0, angularVelocity, 0 );
         Quaternion deltaAngularRotation = Quaternion.Euler( angularVelocityVector * Time.deltaTime );
         //Low speed calculations
         mainVehiclePhysics.rigidbody.MoveRotation( mainVehiclePhysics.rigidbody.rotation
                                                    * deltaAngularRotation );
+
+        //** High Speed Turning **//
+        float velocitySquared = vehicleVelocity * vehicleVelocity;
+        Transform vehicleTransform = mainVehiclePhysics.transform;
+
+        float centripedalForce = ( vehicleMass * velocitySquared ) / turningRadius;
+
+
+        //0.7 is the friction of rubber 
+        float coefficientOfFriction = ( 0.7f * ( wheelBase / turningRadius ) * velocitySquared ) 
+                                      / wheelBase;
+        float excessForce = ( 0.7f * ( wheelBase / turningRadius ) * velocitySquared )
+                            / ( wheelBase - coefficientOfFriction );
+        //The amount of acceleration caused by drifting
+        float driftForceAcceleration = excessForce / vehicleMass;
+
+        Debug.Log( driftForceAcceleration );
+
+        mainVehiclePhysics.rigidbody.AddForceAtPosition( new Vector3( driftForceAcceleration, 0, 0 ), mainVehiclePhysics.vehicleCenterOfGravity.transform.position );
+
+        //vehicleTransform.RotateAround( mainVehiclePhysics.vehicleCenterOfGravity.transform.position + mainVehiclePhysics.vehicleCenterOfGravity.transform.right * driftForceAcceleration * mainVehiclePhysics.engineComponent.steer,
+        //                               mainVehiclePhysics.vehicleCenterOfGravity.transform.position,
+        //                               driftForceAcceleration * Mathf.Rad2Deg * Time.deltaTime );
     }
 
-
-    //private void ApplySteering ( Vector3 velocity )
-    //{
-    //    //double turnRadius = 3.0 / Mathf.Sin( ( 90 - ( steer * 30 ) ) * Mathf.Deg2Rad );
-    //    //float minMaxTurn = SpeedTurnRatio( );
-    //    //float turnSpeed = Mathf.Clamp( velocity.z / ( float )turnRadius, -minMaxTurn / 10, minMaxTurn / 10 );
-    //    //transform.RotateAround( transform.position + transform.right * ( float )turnRadius * steer,
-    //    //                        transform.up,
-    //    //                        turnSpeed * Mathf.Rad2Deg * Time.deltaTime * steer );
-    //}
-
-    /*Vehicle Weight Calculations*/
+    /*******************Vehicle Weight Calculations*******************/
     private void WheelWeightDistribution( )
     {
         //Front Wheel Calculations
@@ -267,9 +270,12 @@ public class WheelComponent
         //Weight in Kilograms
         float vehicleWeight = vehicleMass * earthGravitationalConstant;
         Vector3 centerOfGravityPosition = mainVehiclePhysics.rigidbody.worldCenterOfMass;
+        if ( mainVehiclePhysics.vehicleCenterOfGravity != null )
+        {
+            centerOfGravityPosition = mainVehiclePhysics.vehicleCenterOfGravity.transform.position;
+        }
         float centerGravityDistanceToFrontAxle = Vector3.Distance( centerOfGravityPosition, vehicleWheels[ 0 ].visualWheel.position );
         float centerGravityDistanceToRearAxle = Vector3.Distance( centerOfGravityPosition, vehicleWheels[ 2 ].visualWheel.position );
-
         //TODO: Improve and use the friction coefficient
         float frictionCoefficient = 1.0f;
         float wheelFrictionLimit = frictionCoefficient * vehicleWeight;
