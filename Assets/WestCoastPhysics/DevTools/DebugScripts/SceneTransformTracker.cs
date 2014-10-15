@@ -39,7 +39,8 @@ public class SceneTransformTracker : Observer
 		    {
 			    continue;
 		    }
-		    if( SceneDebugger.toggleView == ToggleDebugViewable.DEBUG_VIEWABLE )
+		    if( SceneDebugger.toggleView == ToggleDebugViewable.DEBUG_VIEWABLE
+                || SceneDebugger.toggleView == ToggleDebugViewable.DEBUG_SHOW_EXTENSIONS )
 		    {
 			    GUI.Label(  new Rect( 10, boxCounter, 200, 100 ), gameObject.name + 
 				                                                  "\n" + gameObject.transform.position );

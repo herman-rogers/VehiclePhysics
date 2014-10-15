@@ -1,0 +1,123 @@
+fileFormatVersion: 2
+guid: da37a447464545f4f98c22a028e30f51
+ModelImporter:
+  serializedVersion: 16
+  fileIDToRecycleName:
+    100000: Hood
+    100002: Spare01
+    100004: Spare02
+    100006: suspension_LR
+    100008: suspension_LR 1
+    100010: suspension_RF
+    100012: suspension_RR
+    100014: //RootNode
+    100016: truck_full_player
+    100018: wheel_LF
+    100020: wheel_LR
+    100022: wheel_RF
+    100024: wheel_RR
+    400000: Hood
+    400002: Spare01
+    400004: Spare02
+    400006: suspension_LR
+    400008: suspension_LR 1
+    400010: suspension_RF
+    400012: suspension_RR
+    400014: //RootNode
+    400016: truck_full_player
+    400018: wheel_LF
+    400020: wheel_LR
+    400022: wheel_RF
+    400024: wheel_RR
+    2300000: Hood
+    2300002: Spare01
+    2300004: Spare02
+    2300006: suspension_LR
+    2300008: suspension_LR 1
+    2300010: suspension_RF
+    2300012: suspension_RR
+    2300014: truck_full_player
+    2300016: wheel_LF
+    2300018: wheel_LR
+    2300020: wheel_RF
+    2300022: wheel_RR
+    3300000: Hood
+    3300002: Spare01
+    3300004: Spare02
+    3300006: suspension_LR
+    3300008: suspension_LR 1
+    3300010: suspension_RF
+    3300012: suspension_RR
+    3300014: truck_full_player
+    3300016: wheel_LF
+    3300018: wheel_LR
+    3300020: wheel_RF
+    3300022: wheel_RR
+    4300000: truck_full_player
+    4300002: Hood
+    4300004: Spare02
+    4300006: Spare01
+    4300008: suspension_LR
+    4300010: suspension_RR
+    4300012: suspension_RF
+    4300014: suspension_LR
+    4300016: wheel_LF
+    4300018: wheel_RF
+    4300020: wheel_LR
+    4300022: wheel_RR
+    7400000: Take 001
+    9500000: //RootNode
+  materials:
+    importMaterials: 1
+    materialName: 0
+    materialSearch: 1
+  animations:
+    legacyGenerateAnimations: 4
+    bakeSimulation: 0
+    optimizeGameObjects: 0
+    motionNodeName: 
+    animationCompression: 1
+    animationRotationError: .5
+    animationPositionError: .5
+    animationScaleError: .5
+    animationWrapMode: 0
+    extraExposedTransformPaths: []
+    clipAnimations: []
+    isReadable: 1
+  meshes:
+    lODScreenPercentages: []
+    globalScale: .0240000002
+    meshCompression: 0
+    addColliders: 0
+    importBlendShapes: 1
+    swapUVChannels: 0
+    generateSecondaryUV: 0
+    useFileUnits: 1
+    optimizeMeshForGPU: 1
+    weldVertices: 1
+    secondaryUVAngleDistortion: 8
+    secondaryUVAreaDistortion: 15.000001
+    secondaryUVHardAngle: 88
+    secondaryUVPackMargin: 4
+  tangentSpace:
+    normalSmoothAngle: 60
+    splitTangentsAcrossUV: 1
+    normalImportMode: 0
+    tangentImportMode: 1
+  importAnimation: 1
+  copyAvatar: 0
+  humanDescription:
+    human: []
+    skeleton: []
+    armTwist: .5
+    foreArmTwist: .5
+    upperLegTwist: .5
+    legTwist: .5
+    armStretch: .0500000007
+    legStretch: .0500000007
+    feetSpacing: 0
+    rootMotionBoneName: 
+  lastHumanDescriptionAvatarSource: {instanceID: 0}
+  animationType: 2
+  additionalBone: 0
+  userData: 

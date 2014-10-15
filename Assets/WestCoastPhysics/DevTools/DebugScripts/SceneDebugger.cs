@@ -10,7 +10,9 @@ public enum ToggleDebugViewable
 
 public class SceneDebugger : UnityObserver
 {
+    public bool startWithExtensionsEnabled;
 	public static ToggleDebugViewable toggleView = ToggleDebugViewable.DEBUG_HIDDEN;
+    public static VehiclePhysicsExtension vehicleExtensions;
 	public const string versionNumber = "v0.01.1";
 	public const string SHOW_GUI = "SHOW_GUI";
 	#pragma warning disable 0414
@@ -27,6 +29,11 @@ public class SceneDebugger : UnityObserver
 		sceneReverser = new SceneReverser( );
 		#pragma warning disable 0168
 		var sceneDebuggerObserver = new SceneDebuggerObserver( );
+        vehicleExtensions = new VehiclePhysicsExtension( );
+        if( startWithExtensionsEnabled )
+        {
+            toggleView = ToggleDebugViewable.DEBUG_SHOW_EXTENSIONS;
+        }
 	}
 
 	void Update( )
@@ -44,6 +51,7 @@ public class SceneDebugger : UnityObserver
 
 	void OnGUI( )
 	{
+        transformTracker.TrackTransformsInScene( );
 		if( toggleView == ToggleDebugViewable.DEBUG_VIEWABLE ||
             toggleView == ToggleDebugViewable.DEBUG_SHOW_EXTENSIONS )
 		{
@@ -51,9 +59,8 @@ public class SceneDebugger : UnityObserver
 		}
         if( toggleView == ToggleDebugViewable.DEBUG_SHOW_EXTENSIONS )
         {
-            VehicleExtension.ShowMainGUI( );
+            vehicleExtensions.ShowMainGUI( );
         }
-		transformTracker.TrackTransformsInScene( );
 	}
 
 	private void ToggleDebugGUI( )
@@ -81,12 +88,12 @@ public class SceneDebugger : UnityObserver
 		{
 			transformTracker.ResetTrackedObjects( );
 		}
+		GUI.Label( new Rect( 10, 160, 200, 20 ), "Tracked Objects: " );
+        transformTracker.ListTrackedObjects( );
         if ( GUI.Button( new Rect( 10, 400, 200, 20 ), "Show Vehicle Stats" ) )
 		{
             toggleView = ToggleDebugViewable.DEBUG_SHOW_EXTENSIONS;
 		}
-		GUI.Label( new Rect( 10, 160, 200, 20 ), "Tracked Objects: " );
-		transformTracker.ListTrackedObjects( );
 		GUI.DragWindow( );
 	}
 }

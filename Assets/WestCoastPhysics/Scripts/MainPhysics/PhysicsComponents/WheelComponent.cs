@@ -135,11 +135,11 @@ public class WheelComponent
         //float squareVelocity = velocity.x * velocity.x;
         //wheelFriction.extremumValue = Mathf.Clamp( 300 - squareVelocity, 0, 300 );
         //wheelFriction.asymptoteValue = Mathf.Clamp( 150 - ( squareVelocity / 2 ), 0, 150 );
-        foreach ( WheelCollider wheel in vehicleColliders )
-        {
-            wheel.sidewaysFriction = wheelFriction;
-            wheel.forwardFriction = wheelFriction;
-        }
+        //foreach ( WheelCollider wheel in vehicleColliders )
+        //{
+        //    wheel.sidewaysFriction = wheelFriction;
+        //    wheel.forwardFriction = wheelFriction;
+        //}
     }
 
     public float CalculateWheelSlip ( )
@@ -186,7 +186,6 @@ public class WheelComponent
 
         float centripedalForce = ( vehicleMass * velocitySquared ) / turningRadius;
 
-
         //0.7 is the friction of rubber 
         float coefficientOfFriction = ( 0.7f * ( wheelBase / turningRadius ) * velocitySquared ) 
                                       / wheelBase;
@@ -195,9 +194,10 @@ public class WheelComponent
         //The amount of acceleration caused by drifting
         float driftForceAcceleration = excessForce / vehicleMass;
 
-        Debug.Log( driftForceAcceleration );
+        
 
-        mainVehiclePhysics.rigidbody.AddForceAtPosition( new Vector3( driftForceAcceleration, 0, 0 ), mainVehiclePhysics.vehicleCenterOfGravity.transform.position );
+        mainVehiclePhysics.rigidbody.AddForceAtPosition( new Vector3( driftForceAcceleration, 0, 0 ),
+                                                         vehicleWheels[ i_rearLeftWheel ].visualWheel.position );
 
         //vehicleTransform.RotateAround( mainVehiclePhysics.vehicleCenterOfGravity.transform.position + mainVehiclePhysics.vehicleCenterOfGravity.transform.right * driftForceAcceleration * mainVehiclePhysics.engineComponent.steer,
         //                               mainVehiclePhysics.vehicleCenterOfGravity.transform.position,
