@@ -28,12 +28,12 @@ public class VehiclePhysics : MonoBehaviour
         wheelComponent = new WheelComponent( gameObject );
         engineComponent = gameObject.AddComponent<EngineComponent>( );
         engineComponent.Start( );
-        rigidbody.centerOfMass += new Vector3( 0, 0, 1.0f );
+        GetComponent<Rigidbody>().centerOfMass += new Vector3( 0, 0, 1.0f );
     }
 
     private void Update ( )
     {
-        Vector3 vehicleVelocity = transform.InverseTransformDirection( rigidbody.velocity );
+        Vector3 vehicleVelocity = transform.InverseTransformDirection( GetComponent<Rigidbody>().velocity );
         //gearsComponent.UpdateGears( vehicleVelocity );
         engineComponent.EngineUpdate( );
         wheelComponent.WheelUpdate( vehicleVelocity );
@@ -57,6 +57,6 @@ public class VehiclePhysics : MonoBehaviour
         {
             drag.x = -vehicleVelocity.x * dragMultiplier.x;
         }
-        rigidbody.AddForce( transform.TransformDirection( drag ) * rigidbody.mass * Time.deltaTime );
+        GetComponent<Rigidbody>().AddForce( transform.TransformDirection( drag ) * GetComponent<Rigidbody>().mass * Time.deltaTime );
     }
 }

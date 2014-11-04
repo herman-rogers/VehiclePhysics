@@ -59,13 +59,11 @@ public class EngineComponent : MonoBehaviour
         brake = Input.GetAxis( "Brake" );
     }
 
-
-
     private void LongitudinalForces( )
     {
-        Vector3 vehicleForwardsSpeed = transform.InverseTransformDirection( rigidbody.velocity );
+        Vector3 vehicleForwardsSpeed = transform.InverseTransformDirection( GetComponent<Rigidbody>().velocity );
         //VehicleSpeed in KM/h
-        vehicleSpeed = rigidbody.velocity.magnitude;
+        vehicleSpeed = GetComponent<Rigidbody>().velocity.magnitude;
         //Calculating Engine Torque
         currentEngineRPM = CalculateEngineRPM( );
         maxTorque = CalculateTorque( currentEngineRPM );
@@ -98,13 +96,13 @@ public class EngineComponent : MonoBehaviour
 
         if ( brake > 0.0f && vehicleForwardsSpeed.z >= -15.0f )
         {
-            rigidbody.AddForce( transform.forward
+            GetComponent<Rigidbody>().AddForce( transform.forward
                                 * Time.deltaTime
                                 * ( totalBrakeForce ), ForceMode.Acceleration );
         }
         if ( totalLongitudinalForces > 0.0f )
         {
-            rigidbody.AddForce( transform.forward
+            GetComponent<Rigidbody>().AddForce( transform.forward
                                 * Time.deltaTime
                                 * totalLongitudinalForces, ForceMode.Acceleration );
         }

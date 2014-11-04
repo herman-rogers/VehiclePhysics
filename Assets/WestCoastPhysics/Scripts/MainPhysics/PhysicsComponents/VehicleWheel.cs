@@ -39,7 +39,7 @@ public class VehicleWheel
         mainWheelCollider = vehicleWheel;
         wheelPhysics = wheelComponent;
         visualWheel = vehicleWheel.GetComponentInChildren<MeshRenderer>( ).transform;
-        wheelRadius = ( visualWheel.renderer.bounds.size.y / 2 );
+        wheelRadius = ( visualWheel.GetComponent<Renderer>().bounds.size.y / 2 );
         mainWheelCollider.radius = wheelRadius;
         mainWheelCollider.GetGroundHit( out wheelGroundContactPoint );
     }
@@ -57,7 +57,7 @@ public class VehicleWheel
 
     private void UpdateWheelGraphic( )
     {
-        Vector3 wheelVelocity = wheelPhysics.mainVehiclePhysics.rigidbody.GetPointVelocity( wheelGroundContactPoint.point );
+        Vector3 wheelVelocity = wheelPhysics.mainVehiclePhysics.GetComponent<Rigidbody>().GetPointVelocity( wheelGroundContactPoint.point );
         Vector3 localWheelVelocity = visualWheel.parent.InverseTransformDirection( wheelVelocity );
         if ( wheelFrontRear == WheelPosition.FRONT_WHEEL )
         {

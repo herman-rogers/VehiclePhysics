@@ -131,21 +131,21 @@ public class WheelComponent
 
     private void WheelFriction( )
     {
-        //Vector3 velocity = mainVehiclePhysics.rigidbody.velocity;
-        //float squareVelocity = velocity.x * velocity.x;
-        //wheelFriction.extremumValue = Mathf.Clamp( 300 - squareVelocity, 0, 300 );
-        //wheelFriction.asymptoteValue = Mathf.Clamp( 150 - ( squareVelocity / 2 ), 0, 150 );
-        //foreach ( WheelCollider wheel in vehicleColliders )
-        //{
-        //    wheel.sidewaysFriction = wheelFriction;
-        //    wheel.forwardFriction = wheelFriction;
-        //}
+        Vector3 velocity = mainVehiclePhysics.GetComponent<Rigidbody>().velocity;
+        float squareVelocity = velocity.x * velocity.x;
+        wheelFriction.extremumValue = Mathf.Clamp( 300 - squareVelocity, 0, 300 );
+        wheelFriction.asymptoteValue = Mathf.Clamp( 150 - ( squareVelocity / 2 ), 0, 150 );
+        foreach ( WheelCollider wheel in vehicleColliders )
+        {
+            wheel.sidewaysFriction = wheelFriction;
+            wheel.forwardFriction = wheelFriction;
+        }
     }
 
     public float CalculateWheelSlip ( )
     {
         float wheelSlip = 0.0f;
-        Vector3 vehicleVelocity = mainVehiclePhysics.rigidbody.velocity;
+        Vector3 vehicleVelocity = mainVehiclePhysics.GetComponent<Rigidbody>().velocity;
         float slipRatio = ( mainVehiclePhysics.engineComponent.wheelAngularVelocity
                             * vehicleWheels[ i_rearLeftWheel ].wheelRadius
                             * -vehicleVelocity.magnitude ) / vehicleVelocity.magnitude;
@@ -164,7 +164,7 @@ public class WheelComponent
 
     private void SpeedTurnRatio( )
     {
-        float vehicleMass = mainVehiclePhysics.rigidbody.mass;
+        float vehicleMass = mainVehiclePhysics.GetComponent<Rigidbody>().mass;
         float vehicleWeight = vehicleMass * earthGravitationalConstant;
         float vehicleVelocity = mainVehiclePhysics.engineComponent.vehicleSpeed;
         //** Low Speed Turning **//
@@ -177,7 +177,7 @@ public class WheelComponent
         Vector3 angularVelocityVector = new Vector3( 0, angularVelocity, 0 );
         Quaternion deltaAngularRotation = Quaternion.Euler( angularVelocityVector * Time.deltaTime );
         //Low speed calculations
-        mainVehiclePhysics.rigidbody.MoveRotation( mainVehiclePhysics.rigidbody.rotation
+        mainVehiclePhysics.GetComponent<Rigidbody>().MoveRotation( mainVehiclePhysics.GetComponent<Rigidbody>().rotation
                                                    * deltaAngularRotation );
 
         //** High Speed Turning **//
@@ -196,7 +196,7 @@ public class WheelComponent
 
         
 
-        mainVehiclePhysics.rigidbody.AddForceAtPosition( new Vector3( driftForceAcceleration, 0, 0 ),
+        mainVehiclePhysics.GetComponent<Rigidbody>().AddForceAtPosition( new Vector3( driftForceAcceleration, 0, 0 ),
                                                          vehicleWheels[ i_rearLeftWheel ].visualWheel.position );
 
         //vehicleTransform.RotateAround( mainVehiclePhysics.vehicleCenterOfGravity.transform.position + mainVehiclePhysics.vehicleCenterOfGravity.transform.right * driftForceAcceleration * mainVehiclePhysics.engineComponent.steer,
@@ -253,10 +253,10 @@ public class WheelComponent
             return;
         }
         //Vehicle weight position shift based on center of gravity
-        mainVehiclePhysics.rigidbody.AddForceAtPosition( applyDirection * currentWheelWeightDistribution,
+        mainVehiclePhysics.GetComponent<Rigidbody>().AddForceAtPosition( applyDirection * currentWheelWeightDistribution,
                                                          vehicleWheels[ wheel ].mainWheelCollider.transform.position );
         //anti-roll force
-        mainVehiclePhysics.rigidbody.AddForceAtPosition( vehicleWheels[ wheel ].mainWheelCollider.transform.up
+        mainVehiclePhysics.GetComponent<Rigidbody>().AddForceAtPosition( vehicleWheels[ wheel ].mainWheelCollider.transform.up
                                                          * rollForce,
                                                          vehicleWheels[ wheel ].mainWheelCollider.transform.position );
     }
@@ -266,10 +266,10 @@ public class WheelComponent
     private void CalculateLongitudinalWeight( int currentWheel, out float currentWheelAxis )
     {
         //weight distributed between front and rear axles
-        float vehicleMass = mainVehiclePhysics.rigidbody.mass;
+        float vehicleMass = mainVehiclePhysics.GetComponent<Rigidbody>().mass;
         //Weight in Kilograms
         float vehicleWeight = vehicleMass * earthGravitationalConstant;
-        Vector3 centerOfGravityPosition = mainVehiclePhysics.rigidbody.worldCenterOfMass;
+        Vector3 centerOfGravityPosition = mainVehiclePhysics.GetComponent<Rigidbody>().worldCenterOfMass;
         if ( mainVehiclePhysics.vehicleCenterOfGravity != null )
         {
             centerOfGravityPosition = mainVehiclePhysics.vehicleCenterOfGravity.transform.position;
