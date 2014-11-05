@@ -28,14 +28,25 @@ public class VehiclePhysics : MonoBehaviour
         wheelComponent = new WheelComponent( gameObject );
         engineComponent = gameObject.AddComponent<EngineComponent>( );
         engineComponent.Start( );
-        GetComponent<Rigidbody>().centerOfMass += new Vector3( 0, 0, 1.0f );
+        UnityWheelBugFix( );
+        //GetComponent<Rigidbody>().centerOfMass += new Vector3( 0, 0, 1.0f );
+    }
+
+    private void UnityWheelBugFix ( )
+    {
+        foreach ( WheelCollider wheel in vehicleWheels )
+        {
+            wheel.transform.position = new Vector3( wheel.transform.position.x,
+                                                    wheel.transform.position.y,
+                                                    wheel.transform.position.z );
+        }
     }
 
     private void Update ( )
     {
         Vector3 vehicleVelocity = transform.InverseTransformDirection( GetComponent<Rigidbody>().velocity );
         //gearsComponent.UpdateGears( vehicleVelocity );
-        engineComponent.EngineUpdate( );
+        //engineComponent.EngineUpdate( );
         wheelComponent.WheelUpdate( vehicleVelocity );
     }
 
@@ -45,18 +56,18 @@ public class VehiclePhysics : MonoBehaviour
         wheelComponent.WheelFixedUpdate( );
     }
 
-    private void UpdateVehicleDrag ( Vector3 vehicleVelocity )
-    {
-        Vector3 relativeDrag = new Vector3( -vehicleVelocity.x * Mathf.Abs( vehicleVelocity.x ),
-                                            -vehicleVelocity.y * Mathf.Abs( vehicleVelocity.y ),
-                                            -vehicleVelocity.z * Mathf.Abs( vehicleVelocity.z ) );
-        Vector3 drag = Vector3.Scale( dragMultiplier, relativeDrag );
-        //Add in Hand brake here, adding code that runs when handbrake is not activated
-        drag.x *= speedCap / vehicleVelocity.magnitude;
-        if ( Mathf.Abs( vehicleVelocity.x ) < 5 )
-        {
-            drag.x = -vehicleVelocity.x * dragMultiplier.x;
-        }
-        GetComponent<Rigidbody>().AddForce( transform.TransformDirection( drag ) * GetComponent<Rigidbody>().mass * Time.deltaTime );
-    }
+    //private void UpdateVehicleDrag ( Vector3 vehicleVelocity )
+    //{
+    //    Vector3 relativeDrag = new Vector3( -vehicleVelocity.x * Mathf.Abs( vehicleVelocity.x ),
+    //                                        -vehicleVelocity.y * Mathf.Abs( vehicleVelocity.y ),
+    //                                        -vehicleVelocity.z * Mathf.Abs( vehicleVelocity.z ) );
+    //    Vector3 drag = Vector3.Scale( dragMultiplier, relativeDrag );
+    //    //Add in Hand brake here, adding code that runs when handbrake is not activated
+    //    drag.x *= speedCap / vehicleVelocity.magnitude;
+    //    if ( Mathf.Abs( vehicleVelocity.x ) < 5 )
+    //    {
+    //        drag.x = -vehicleVelocity.x * dragMultiplier.x;
+    //    }
+    //    GetComponent<Rigidbody>().AddForce( transform.TransformDirection( drag ) * GetComponent<Rigidbody>().mass * Time.deltaTime );
+    //}
 }

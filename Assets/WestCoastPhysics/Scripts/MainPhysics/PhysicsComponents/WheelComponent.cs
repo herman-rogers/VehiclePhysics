@@ -34,8 +34,8 @@ public class WheelComponent
         mainVehiclePhysics = vehiclePhysics.GetComponent<VehiclePhysics>( );
         vehicleColliders = mainVehiclePhysics.vehicleWheels;
         SetupWheelObjects( );
-        WheelSuspension( );
-        WheelFrictionCurve( );
+        //WheelSuspension( );
+        //WheelFrictionCurve( );
         CalculateDistanceBetweenAxles( );
         CalculateDistanceBetweenRearWheels( );
     }
@@ -68,8 +68,8 @@ public class WheelComponent
 
     public void WheelFixedUpdate( )
     {
-        WheelFriction( );
-        WheelWeightDistribution( );
+       // WheelFriction( );
+       // WheelWeightDistribution( );
         SpeedTurnRatio( );
         UpdateVehicleWheels( );
     }
@@ -196,8 +196,8 @@ public class WheelComponent
 
         
 
-        mainVehiclePhysics.GetComponent<Rigidbody>().AddForceAtPosition( new Vector3( driftForceAcceleration, 0, 0 ),
-                                                         vehicleWheels[ i_rearLeftWheel ].visualWheel.position );
+        //mainVehiclePhysics.GetComponent<Rigidbody>().AddForceAtPosition( new Vector3( driftForceAcceleration, 0, 0 ),
+        //                                                 vehicleWheels[ i_rearLeftWheel ].visualWheel.position );
 
         //vehicleTransform.RotateAround( mainVehiclePhysics.vehicleCenterOfGravity.transform.position + mainVehiclePhysics.vehicleCenterOfGravity.transform.right * driftForceAcceleration * mainVehiclePhysics.engineComponent.steer,
         //                               mainVehiclePhysics.vehicleCenterOfGravity.transform.position,
