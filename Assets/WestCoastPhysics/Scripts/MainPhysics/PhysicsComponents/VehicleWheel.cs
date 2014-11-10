@@ -28,7 +28,7 @@ public class VehicleWheel
     public Transform visualWheel;
     public float wheelRadius;
 
-    public VehicleWheel( WheelCollider vehicleWheel,
+    public VehicleWheel(  WheelCollider vehicleWheel,
                           WheelComponent wheelComponent,
                           WheelPosition frontRear,
                           WheelPosition leftRight )
@@ -57,56 +57,14 @@ public class VehicleWheel
 
     private void UpdateWheelGraphic( )
     {
-        //Vector3 wheelVelocity = wheelPhysics.mainVehiclePhysics.GetComponent<Rigidbody>().GetPointVelocity( wheelGroundContactPoint.point );
-        //Vector3 localWheelVelocity = visualWheel.parent.InverseTransformDirection( wheelVelocity );
-
-        Transform visualWheel = mainWheelCollider.transform.GetChild( 0 );
         Vector3 position = new Vector3( 0, 0, 0 );
         Quaternion rotation = Quaternion.identity;
         mainWheelCollider.GetLocalPose( out position, out rotation );
-
         if ( wheelFrontRear == WheelPosition.FRONT_WHEEL )
         {
-            mainWheelCollider.steerAngle = 30 * ( Input.GetAxis( "Horizontal" ) );
-            mainWheelCollider.motorTorque = 400 * ( Input.GetAxis( "Acceleration" ) * 2 );
-            //mainWheelCollider.motorTorque = 10 * Input.GetAxis( "Brake" );
-            //SteeringRotation( localWheelVelocity );
-            //return;
+            mainWheelCollider.steerAngle = 25 * ( Input.GetAxis( "Horizontal" ) );
         }
-        //RotateDrivingWheel( localWheelVelocity );
         visualWheel.transform.position = mainWheelCollider.transform.parent.TransformPoint( position );
         visualWheel.transform.rotation = mainWheelCollider.transform.parent.rotation * rotation;
-    }
-
-    public void SteeringRotation( Vector3 frontVelocity )
-    {
-        //Rotate the wheels horizontally
-        Vector3 cachedWheelRotation = visualWheel.parent.localEulerAngles;
-        cachedWheelRotation.y = wheelPhysicsComponent.SteeringAngle( );
-        //float test = SpeedTurnRatio( );
-        visualWheel.parent.localEulerAngles = cachedWheelRotation;
-        //Rotate the wheels vertically
-        visualWheel.Rotate( Vector3.right
-                            * ( frontVelocity.z / wheelRadius )
-                            * Time.deltaTime * Mathf.Rad2Deg );
-    }
-
-    public void RotateDrivingWheel( Vector3 rearRotation )
-    {
-        if ( wheelPhysicsComponent.mainVehiclePhysics.engineComponent.vehicleThrottle > 0.0f )
-        {
-            float rearWheelVelocity = ( ( wheelPhysicsComponent.mainVehiclePhysics.engineComponent.vehicleThrottle * 10 ) 
-                                          * rearRotation.z );
-            visualWheel.Rotate( Vector3.right
-                                * ( rearWheelVelocity / wheelRadius )
-                                * Time.deltaTime
-                                * Mathf.Rad2Deg );
-        }
-        else
-        {
-            visualWheel.Rotate( Vector3.right
-                                * ( rearRotation.z / wheelRadius )
-                                * Time.deltaTime * Mathf.Rad2Deg );
-        }
     }
 }

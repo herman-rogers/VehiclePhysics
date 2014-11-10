@@ -34,8 +34,8 @@ public class TestController : MonoBehaviour
 
     public void FixedUpdate ( )
     {
-        float motor = maxMotorTorque * Input.GetAxis( "Vertical" );
-        float steering = maxSteeringAngle * Input.GetAxis( "Horizontal" );
+        //float motor = maxMotorTorque * Input.GetAxis( "Vertical" );
+        //float steering = maxSteeringAngle * Input.GetAxis( "Horizontal" );
 
         foreach ( AxleInfo infor in axleInformation )
         {

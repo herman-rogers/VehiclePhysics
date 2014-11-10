@@ -33,18 +33,18 @@ public class EngineComponent : MonoBehaviour
     private float forwardsDrag;
     private float forwardsRollingResistance;
 
-    public void Start( )
+    public void Start ( )
     {
         vehiclePhysics = GetComponent<VehiclePhysics>( );
         wheelComponent = vehiclePhysics.wheelComponent;
     }
 
-    public void EngineUpdate( )
+    public void EngineUpdate ( )
     {
         UpdateInput( );
     }
 
-    public void EngineFixedUpdate( )
+    public void EngineFixedUpdate ( )
     {
         LongitudinalForces( );
         AutomaticGearShift( );
@@ -52,34 +52,27 @@ public class EngineComponent : MonoBehaviour
     }
 
     //TODO: Move this into an Input Component Script
-    private void UpdateInput( )
+    private void UpdateInput ( )
     {
         steer = Input.GetAxis( "Horizontal" );
         vehicleThrottle = Input.GetAxis( "Acceleration" );
         brake = Input.GetAxis( "Brake" );
     }
 
-    private void LongitudinalForces( )
-    {
-        Vector3 vehicleForwardsSpeed = transform.InverseTransformDirection( GetComponent<Rigidbody>().velocity );
-        //VehicleSpeed in KM/h
-        vehicleSpeed = GetComponent<Rigidbody>().velocity.magnitude;
+    private void LongitudinalForces ( )
+    {   //VehicleSpeed in KM/h
+        vehicleSpeed = GetComponent<Rigidbody>( ).velocity.magnitude;
         //Calculating Engine Torque
         currentEngineRPM = CalculateEngineRPM( );
         maxTorque = CalculateTorque( currentEngineRPM );
         engineTorque = vehicleThrottle * maxTorque;
 
-
-
         float engineBrake = ( -brake ) * maxTorque;
         horsePower = ( engineTorque * currentEngineRPM ) / 5252;
 
         //The Amount of torque ( force ) we recieve when converting engine torque to the rear wheels
-
-
         float driveTorque = engineTorque * 9.1f * transmissionEfficiency;
         float forceDrive = ( driveTorque / wheelComponent.vehicleWheels[ 0 ].wheelRadius );
-
 
         //Brake Torque
         float brakeTorque = engineBrake * GearMultiplier( ) * transmissionEfficiency;
@@ -88,27 +81,14 @@ public class EngineComponent : MonoBehaviour
         totalLongitudinalForces = forceDrive
                                   + forwardsDrag
                                   + forwardsRollingResistance;
-                                  //+ wheelComponent.CalculateWheelSlip( );
         totalBrakeForce = brakeForce
                                 + forwardsDrag
                                 + forwardsRollingResistance;
-                                //- wheelComponent.CalculateWheelSlip( );
-
-        if ( brake > 0.0f && vehicleForwardsSpeed.z >= -15.0f )
-        {
-            GetComponent<Rigidbody>().AddForce( transform.forward
-                                * Time.deltaTime
-                                * ( totalBrakeForce ), ForceMode.Acceleration );
-        }
-        if ( totalLongitudinalForces > 0.0f )
-        {
-            GetComponent<Rigidbody>().AddForce( transform.forward
-                                * Time.deltaTime
-                                * totalLongitudinalForces, ForceMode.Acceleration );
-        }
+        wheelComponent.vehicleWheels[ 2 ].mainWheelCollider.motorTorque = totalLongitudinalForces + totalBrakeForce;
+        wheelComponent.vehicleWheels[ 3 ].mainWheelCollider.motorTorque = totalLongitudinalForces + totalBrakeForce;
     }
 
-    private void VehicleResistanceCoefficients( )
+    private void VehicleResistanceCoefficients ( )
     {
         float coefficientDrag = airFrictionDrag * amountOfDragForVehicleShape
                                 * vehicleFrontalArea * Mathf.Sqrt( vehicleSpeed );
@@ -119,7 +99,7 @@ public class EngineComponent : MonoBehaviour
         forwardsRollingResistance = -coefficientRollingResistance * vehicleSpeed;
     }
 
-    private float GearMultiplier( )
+    private float GearMultiplier ( )
     {
         float gearMultiplier = gearRatio * differentialRatio;
         //Approximating 30% loss of energy
@@ -128,12 +108,12 @@ public class EngineComponent : MonoBehaviour
         return gearMultiplier;
     }
 
-    private float CalculateEngineRPM( )
+    private float CalculateEngineRPM ( )
     {
         float vehicleSpeedMetersPerSecond = ( vehicleSpeed * 1000 ) / 3600;
         //WheelAngularVelocity:
         //Speed wheel is rotating at a given speed( in Radians/per second )
-        wheelAngularVelocity = vehicleSpeedMetersPerSecond / wheelComponent.vehicleWheels[ 0 ].wheelRadius;
+        wheelAngularVelocity = ( vehicleSpeedMetersPerSecond / wheelComponent.vehicleWheels[ 0 ].wheelRadius );
         float rpm = ( ( wheelAngularVelocity * gearRatio * differentialRatio * 60 ) / ( 2 * pi ) );
         if ( rpm < 1000 )
         {
@@ -142,45 +122,45 @@ public class EngineComponent : MonoBehaviour
         return rpm;
     }
 
-    private float CalculateTorque( float rpms )
+    private float CalculateTorque ( float rpms )
     {
         //based off of y = mx + b. Graph Coordinates are
-        //( x1, y1 ) = ( 0, 250 ), ( x2, y2 ) = ( 6000, 350 )
-        //Torque Curve is in lb-ft
-        float torqueValue = ( ( 0.016f ) * rpms ) + 250;
-        //Converting to newton meters
-        return ( torqueValue * 1.355817f );
+        //( x1, y1 ) = ( 0, 5000 ), ( x2, y2 ) = ( 4000, 0 )
+        //Torque Curve is in Newton Meters
+        float torqueValue = ( -1.25f * rpms ) + 5000;
+        Debug.Log( torqueValue );
+        return torqueValue;
     }
 
-    private void AutomaticGearShift( )
+    private void AutomaticGearShift ( )
     {
-        if ( vehicleSpeed < 25.0f )
+        if ( currentEngineRPM <= 1200.0f )
         {
             gearNumber = 0;
         }
-        else if ( vehicleSpeed >= 25.0f && vehicleSpeed <= 40.0f )
+        else if ( currentEngineRPM > 1200.0f && currentEngineRPM <= 2000.0f )
         {
             gearNumber = 1;
         }
-        else if ( vehicleSpeed >= 40.0f && vehicleSpeed <= 60.0f )
+        else if ( currentEngineRPM > 2000.0f && currentEngineRPM <= 2500.0f )
         {
             gearNumber = 2;
         }
-        else if ( vehicleSpeed >= 60.0f && vehicleSpeed <= 90.0f )
+        else if ( currentEngineRPM > 2500.0f && currentEngineRPM <= 3500.0f )
         {
             gearNumber = 3;
         }
-        else if ( vehicleSpeed >= 90.0f && vehicleSpeed <= 120.0f )
+        else if ( vehicleSpeed > 3500.0f )
         {
             gearNumber = 4;
         }
         gearRatio = engineGearRatios[ gearNumber ];
     }
 
-    private void EngineMonitor( )
+    private void EngineMonitor ( )
     {
-        Subject.NotifyObject( gameObject, 
-                              VehiclePhysicsExtension.VEHICLE_PHYSICS, 
+        Subject.NotifyObject( gameObject,
+                              VehiclePhysicsExtension.VEHICLE_PHYSICS,
                               vehicleSpeed.ToString( ) );
         Subject.NotifyObject( gameObject,
                               VehiclePhysicsExtension.CURRENT_GEAR,
