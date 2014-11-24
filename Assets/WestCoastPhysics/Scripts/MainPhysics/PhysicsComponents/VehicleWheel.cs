@@ -21,7 +21,7 @@ public class VehicleWheel
     public WheelPosition wheelFrontRear;
     //Is Wheel Left or Right
     public WheelPosition wheelLeftRight;
-    public WheelsOnGround isWheelOnGround;
+    public WheelsOnGround checkCurrentWheelState;
     public WheelHit wheelGroundContactPoint;
     public WheelCollider mainWheelCollider;
     public WheelComponent wheelPhysicsComponent;
@@ -35,7 +35,7 @@ public class VehicleWheel
     {
         wheelFrontRear = frontRear;
         wheelLeftRight = leftRight;
-        isWheelOnGround = WheelsOnGround.WHEEL_ON_GROUND;
+        checkCurrentWheelState = WheelsOnGround.WHEEL_ON_GROUND;
         mainWheelCollider = vehicleWheel;
         wheelPhysicsComponent = wheelComponent;
         visualWheel = vehicleWheel.GetComponentInChildren<MeshRenderer>( ).transform;
@@ -46,25 +46,38 @@ public class VehicleWheel
 
     public void UpdateWheel( )
     {
-        if ( mainWheelCollider.GetGroundHit( out wheelGroundContactPoint ) )
-        {
-            isWheelOnGround = WheelsOnGround.WHEEL_ON_GROUND;
-            UpdateWheelGraphic( );
-            return;
-        }
-        isWheelOnGround = WheelsOnGround.WHEEL_IN_AIR;
+        UpdateWheelGraphic( );
+        UpdateWheelPosition( );
     }
 
-    private void UpdateWheelGraphic( )
+    private void UpdateWheelPosition ( )
+    {
+        if ( mainWheelCollider.GetGroundHit( out wheelGroundContactPoint ) )
+        {
+            checkCurrentWheelState = WheelsOnGround.WHEEL_ON_GROUND;
+            return;
+        }
+        checkCurrentWheelState = WheelsOnGround.WHEEL_IN_AIR;
+    }
+
+    private void UpdateWheelGraphic ( )
+    {
+        if ( mainWheelCollider.GetGroundHit( out wheelGroundContactPoint ) )
+        {
+            ChangeTireTransform( );
+        }
+    }
+
+    private void ChangeTireTransform( )
     {
         Vector3 position = new Vector3( 0, 0, 0 );
         Quaternion rotation = Quaternion.identity;
-        mainWheelCollider.GetLocalPose( out position, out rotation );
+        mainWheelCollider.GetWorldPose( out position, out rotation );
         if ( wheelFrontRear == WheelPosition.FRONT_WHEEL )
         {
             mainWheelCollider.steerAngle = 25 * ( Input.GetAxis( "Horizontal" ) );
         }
-        visualWheel.transform.position = mainWheelCollider.transform.parent.TransformPoint( position );
-        visualWheel.transform.rotation = mainWheelCollider.transform.parent.rotation * rotation;
+        visualWheel.transform.localPosition = mainWheelCollider.transform.InverseTransformPoint( position );
+        visualWheel.transform.localRotation = Quaternion.Inverse( mainWheelCollider.transform.rotation ) * rotation;
     }
 }

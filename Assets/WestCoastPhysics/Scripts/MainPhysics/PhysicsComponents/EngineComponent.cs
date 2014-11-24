@@ -84,6 +84,7 @@ public class EngineComponent : MonoBehaviour
         totalBrakeForce = brakeForce
                                 + forwardsDrag
                                 + forwardsRollingResistance;
+        //The Total Forces to move the vehicle forwards
         wheelComponent.vehicleWheels[ 2 ].mainWheelCollider.motorTorque = totalLongitudinalForces + totalBrakeForce;
         wheelComponent.vehicleWheels[ 3 ].mainWheelCollider.motorTorque = totalLongitudinalForces + totalBrakeForce;
     }
@@ -128,7 +129,6 @@ public class EngineComponent : MonoBehaviour
         //( x1, y1 ) = ( 0, 5000 ), ( x2, y2 ) = ( 4000, 0 )
         //Torque Curve is in Newton Meters
         float torqueValue = ( -1.25f * rpms ) + 5000;
-        Debug.Log( torqueValue );
         return torqueValue;
     }
 

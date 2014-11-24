@@ -60,11 +60,11 @@ public class TestController : MonoBehaviour
         {
             return;
         }
-        Transform visualWheel = wheel.transform.GetChild( 0 );
-        Vector3 position = new Vector3( 0, 0, 0 );
-        Quaternion rotation = Quaternion.identity;
-        wheel.GetLocalPose( out position, out rotation );
-        visualWheel.transform.position = wheel.transform.parent.TransformPoint( position );
-        visualWheel.transform.rotation = wheel.transform.parent.rotation * rotation;
+        //Transform visualWheel = wheel.transform.GetChild( 0 );
+        //Vector3 position = new Vector3( 0, 0, 0 );
+        //Quaternion rotation = Quaternion.identity;
+        //wheel.GetLocalPose( out position, out rotation );
+        //visualWheel.transform.position = wheel.transform.parent.TransformPoint( position );
+        //visualWheel.transform.rotation = wheel.transform.parent.rotation * rotation;
     }
 }

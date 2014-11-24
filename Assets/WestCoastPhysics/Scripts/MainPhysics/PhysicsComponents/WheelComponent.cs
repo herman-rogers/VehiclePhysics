@@ -22,6 +22,18 @@ public class WheelComponent
         CalculateDistanceBetweenRearWheels( );
     }
 
+    public int GetWheelsOnGround ( )
+    {
+        int wheelState = FindCurrentWheelState( WheelsOnGround.WHEEL_ON_GROUND );
+        return wheelState;
+    }
+
+    public int GetWheelInAir ( )
+    {
+        int wheelState = FindCurrentWheelState( WheelsOnGround.WHEEL_IN_AIR );
+        return wheelState;
+    }
+
     //Wheels in the VehicleWheel array are set up as frontwheels = 0,1. rearwheels = 2,3
     private void SetupWheelObjects( )
     {
@@ -71,5 +83,18 @@ public class WheelComponent
         Vector3 rearRightWheel = vehicleWheels[ i_rearRightWheel ].mainWheelCollider.transform.position;
         Vector3 rearLeftWheel = vehicleWheels[ i_rearLeftWheel ].mainWheelCollider.transform.position;
         getDistanceBetweenRearWheels = Vector3.Distance( rearRightWheel, rearLeftWheel );
+    }
+
+    private int FindCurrentWheelState ( WheelsOnGround checkForWheelState )
+    {
+        int wheelOnGroundCount = 0;
+        for ( int i = 0; i < vehicleWheels.Length; i++ )
+        {
+            if ( vehicleWheels[ i ].checkCurrentWheelState == checkForWheelState )
+            {
+                wheelOnGroundCount++;
+            }
+        }
+        return wheelOnGroundCount;
     }
 }
